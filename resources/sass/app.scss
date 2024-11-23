@@ -1,0 +1,38 @@
+$fa-font-path: "/webfonts";
+// Fonts
+@import url('https://fonts.googleapis.com/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import '~bootstrap';
+//icheck for checkboxes
+@import "~icheck-bootstrap";
+@import "~admin-lte/dist/css/adminlte.min.css";
+@import "~@fortawesome/fontawesome-free/css/all.min.css";
+@import "~datatables.net-bs4/css/dataTables.bootstrap4.min.css";
+@import "~datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css";
+@import "~datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css";
+@import "~sweetalert2/dist/sweetalert2.css";
+@import '~datatables.net-bs4/css/dataTables.bootstrap4.css';
+@import "~datatables.net-fixedcolumns-bs4/css/fixedColumns.bootstrap4.min.css";
+@import "~toastr/build/toastr.min.css";
+@import "~bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css";
+@import "~multiple-select/dist/multiple-select.css";
+@import "~pixabay-javascript-autocomplete/auto-complete.css";
+@import "~daterangepicker";
+@import "~select2/dist/css/select2.css";
+//fortawesome
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~aos/dist/aos.css";
+@import "~bootstrap-icons/font/bootstrap-icons.css";
+@import "~boxicons/css/boxicons.min.css";
+@import "~glightbox/dist/css/glightbox.min.css";
+@import "~glightbox/dist/css/glightbox.css";
+@import "~swiper/swiper-bundle.min.css";
+
+
+
+
+

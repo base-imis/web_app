@@ -1,0 +1,25 @@
+ul.alert-danger{
+    list-style: none;
+}
+
+.form-group.required .control-label:after {
+  content:"*";
+  color:red;
+}
+
+.login-box {
+    width: 550px !important;
+}
+
+.invalid-feedback{
+    display: block;
+}
+
+.dropdown-menu{
+    top: 46px;
+}
+
+/*Filter Accordion*/
+.accordion{
+    width: 100%;
+}
