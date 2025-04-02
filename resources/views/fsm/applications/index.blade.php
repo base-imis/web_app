@@ -216,7 +216,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             $('#service_provider_id').empty();
 
             // Add a default "Select" option
-            $('#service_provider_id').append('<option value="">Select a Service Provider</option>');
+            $('#service_provider_id').append('<option value="">Service Provider Name</option>');
 
             // Append options to the select dropdown
             $.each(response, function (id, name) {

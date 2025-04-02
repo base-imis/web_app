@@ -2245,7 +2245,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 @can('Tax Payment Status Buildings Map Layer')
                  buildings_tax_status_layer:{
                     name: 'Tax Payment Status',
-                    styles:{},
+                    styles:{
+                        buildings_tax_status_layer: {
+                        name: 'Payment Status',
+                        clipLegend: true,
+                        showCount: false
+                    }
+                    },
                     clipLegend: true,
                     showCount: false,
                     filters: [],

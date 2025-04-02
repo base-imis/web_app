@@ -75,8 +75,13 @@ class HelpDeskRequest extends FormRequest
                     'name' => 'required',
                     'description' => 'required',
                     'contact_number' => 'required|integer',
-                    'email' => ['required', 'max:255', 'unique:pgsql.auth.users' ,'regex:/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix'],
-
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                        Rule::unique('pgsql.auth.users', 'email')->ignore($id, 'help_desk_id'),
+                        'regex:/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix',
+                    ],
                 ];
             }
         default:break;
