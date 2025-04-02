@@ -80,10 +80,8 @@ class EmptyingRequest extends FormRequest
                      'no_of_trips' => 'required|integer|min:1',
                      'receipt_number' => 'required',
                      'total_cost' => 'required|numeric|min:0',
-                     'house_image' => $this->isMethod('post') ? 'required|mimes:jpeg,jpg|max:5120' : 'nullable',
-                     'receipt_image' => $this->isMethod('post') ? 'required|mimes:jpeg,jpg|max:5120' : 'nullable',
-                 
-
+                     'house_image' => 'required|mimes:jpeg,jpg|max:5120',
+                     'receipt_image' => 'required|mimes:jpeg,jpg|max:5120',
                  ];
              default:
                  break;
