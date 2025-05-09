@@ -110,6 +110,7 @@
         </div>
     </div>
 
+    {{-- House number information --}}
     <div class="form-group row">
         {!! Form::label('house_number', __('House Number'), ['class' => 'col-sm-3 control-label']) !!}
         <div class="col-sm-5">
