@@ -526,7 +526,7 @@
                 structype = $('#structype_select').val();
                 ward = $('#ward_select').val();
                 functional_use = $('#functional_use_select').val();
-                use_category_select = $('#functional_use_select').val();
+                use_category_select = $('#use_category_select').val();
                 roadcd = $('#road_code').val();
                 ownername = $('#owner_name').val();
                 toilet = $('#toilet').val();
