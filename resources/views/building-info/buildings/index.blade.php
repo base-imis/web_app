@@ -469,7 +469,6 @@
 
             $("#export").on("click", function(e) {
                 e.preventDefault();
-
                 var searchData = $('input[type=search]').val();
                 var bin = $('#bin_text').val();
                 var house_number = $('#house_number').val();

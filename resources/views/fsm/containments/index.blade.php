@@ -355,7 +355,6 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             cancelButtonColor: '#d33',
                             confirmButtonText: "{{__('Close')}}"
                         });
-
                         return false;
                     }
 
