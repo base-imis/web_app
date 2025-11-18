@@ -5,7 +5,7 @@ namespace App\Http\Controllers\EducationInfo;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\EducationInfo\School;
-use Yajra\DataTables\DataTables;
+use Yajra\DataTables\Facades\DataTables;
 use App\Services\EducationInfo\EducationService;
 use Illuminate\Support\Facades\DB;
 use App\Models\BuildingInfo\Building;
@@ -264,11 +264,11 @@ class EducationController extends Controller
                 ->rawColumns(['action'])
             ->make(true);
     } */
-   public function getData(Request $request)
-    {
-        try {
-            $query = School::select([
-                'id',
+  public function getData(Request $request)
+{
+
+    try {
+        $query = School::select([
                 'custom_school_id',
                 'name',
                 'ward_no',
@@ -280,55 +280,81 @@ class EducationController extends Controller
                 'school_type_secondary_9_10',
                 'school_type_secondary_9_12',
             ])
-            ->when($request->institution_name, function ($q, $v) { $q->where('name', 'like', "%{$v}%"); })
-            ->when($request->institution_type, function ($q, $v) {
-                // your 'type' is derived; if you later store type directly, filter here accordingly
-                // example placeholder, currently no-op
+            ->when($request->institution_name, function ($q, $v) {
+                $q->where('name', 'like', "%{$v}%");
             })
-            ->when($request->ward_number, fn($q,$v)=>$q->where('ward_no',$v))
-            ->when($request->ownership, function($q,$v){
-                // you currently hardcode ownership; when you add a real column, filter here
+            ->when($request->institution_type, function ($q, $v) {
+                // placeholder – add real filter when you have a type column
+            })
+            ->when($request->ward_number, function ($q, $v) {
+                $q->where('ward_no', $v);
+            })
+            ->when($request->ownership, function ($q, $v) {
+                // placeholder – add real filter when you have an ownership column
             });
 
-            // Use the facade (or swap to datatables()->eloquent($query) if you prefer the helper)
-            return DataTables::eloquent($query)
-                ->addColumn('type', function ($row) {
-                    $types = [];
-                    if ($row->school_type_pre_primary)   $types[] = 'Pre-Primary';
-                    if ($row->school_type_basic_1_5)     $types[] = 'Basic 1-5';
-                    if ($row->school_type_basic_6_8)     $types[] = 'Basic 6-8';
-                    if ($row->school_type_secondary_9_10)$types[] = 'Secondary 9-10';
-                    if ($row->school_type_secondary_9_12)$types[] = 'Secondary 9-12';
-                    return implode(', ', $types) ?: 'N/A';
-                })
-                ->addColumn('ownership', function($row){
-                    return 'Public'; // TODO: replace when you have a real column
-                })
-                ->addColumn('action', function ($row) {
-                    // Keep it simple—no \Form dependency:
-                    $showUrl = route('education.school.show', $row->id);
-                    $editUrl = route('education.school.edit', $row->id);
-                    $deleteUrl = route('education.school.delete', $row->id);
+        return DataTables::of($query)
+            ->addColumn('type', function ($row) {
+                $types = [];
+                if ($row->school_type_pre_primary)    $types[] = 'Pre-Primary';
+                if ($row->school_type_basic_1_5)      $types[] = 'Basic 1-5';
+                if ($row->school_type_basic_6_8)      $types[] = 'Basic 6-8';
+                if ($row->school_type_secondary_9_10) $types[] = 'Secondary 9-10';
+                if ($row->school_type_secondary_9_12) $types[] = 'Secondary 9-12';
+                return implode(', ', $types) ?: 'N/A';
+            })
+            ->addColumn('ownership', function ($row) {
+                return 'Public'; // placeholder until you add a real column
+            })
+            ->addColumn('action', function ($row) {
+                // IMPORTANT: use custom_school_id, NOT id
+                $id = $row->custom_school_id;
 
-                    return '
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="'.$showUrl.'" class="btn btn-info" title="View"><i class="fas fa-list"></i></a>
-                            <a href="'.$editUrl.'" class="btn btn-primary" title="Edit"><i class="fas fa-edit"></i></a>
-                            <form action="'.$deleteUrl.'" method="POST" style="display:inline;" onsubmit="return confirm(\'Delete?\')">
-                                '.csrf_field().method_field('DELETE').'
-                                <button class="btn btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
-                            </form>
-                        </div>
-                    ';
-                })
-                ->rawColumns(['action'])
-                ->toJson();
-        } catch (\Throwable $e) {
-            \Log::error('Education getData failed', ['msg' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Server error: '.$e->getMessage()], 500);
-        }
+                // safety guard – if somehow it's null, don't break the whole table
+                if (!$id) {
+                    \Log::error('School row missing custom_school_id', ['row' => $row]);
+                    return '';
+                }
+
+                $showUrl   = route('education.school.show',  ['id' => $id]);
+                $editUrl   = route('education.school.edit',  ['id' => $id]);
+                $deleteUrl = route('education.school.delete', ['id' => $id]);
+
+                return '
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="'.$showUrl.'"
+                           class="btn btn-info show-institution"
+                           data-id="'.$id.'"
+                           title="View">
+                            <i class="fas fa-list"></i>
+                        </a>
+                        <a href="'.$editUrl.'" class="btn btn-primary" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="'.$deleteUrl.'" method="POST" style="display:inline;"
+                              onsubmit="return confirm(\'Delete?\')">
+                            '.csrf_field().method_field('DELETE').'
+                            <button class="btn btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                ';
+            })
+            ->rawColumns(['action'])
+            ->make(true);
+
+    } catch (\Throwable $e) {
+        \Log::error('Education getData failed', [
+            'msg'   => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'error' => 'Server error: '.$e->getMessage(),
+        ], 500);
     }
-
+}
 
     public function create()
     {

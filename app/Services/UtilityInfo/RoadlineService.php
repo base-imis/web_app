@@ -13,6 +13,8 @@ use Box\Spout\Writer\Style\Color;
 use Box\Spout\Writer\Style\StyleBuilder;
 use Box\Spout\Writer\WriterFactory;
 use Yajra\DataTables\DataTables;
+use App\Http\Controllers\Api\RoadlineController;
+use Illuminate\Http\Request;
 
 class RoadlineService {
 
@@ -100,34 +102,86 @@ class RoadlineService {
      */
     public function storeOrUpdate($code = null,$data)
     {
-        if(empty($code)){
-            /*$roadlineTemp = DB::select("SELECT ST_AsText(geom) AS geom FROM roadline_temp");
-            $geom = ($roadlineTemp[0]->geom);*/
+      try {
+            if(empty($code)){
+                $maxcode = Roadline::withTrashed()->max('code');
+                $maxcode = str_replace('R', '', $maxcode);
+                $roadline = new Roadline();
+                $roadline->code = 'R' . sprintf('%04d', $maxcode + 1);
+                $roadline->user_id = Auth::id();
+                $roadline->name = $data['name'] ? $data['name'] : null;
+                $roadline->hierarchy = $data['hierarchy'] ? $data['hierarchy'] : null;
+                $roadline->surface_type = $data['surface_type'] ? $data['surface_type'] : null;
+                $roadline->length = $data['length'] ? $data['length'] : null;
+                $roadline->right_of_way = $data['right_of_way'] ? $data['right_of_way'] : null;
+                $roadline->carrying_width = $data['carrying_width'] ? $data['carrying_width'] : null;
+                $roadline->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
+                $roadline->save();
 
-            $maxcode = Roadline::withTrashed()->max('code');
-            $maxcode = str_replace('R', '', $maxcode);
-            $roadline = new Roadline();
-            $roadline->code = 'R' . sprintf('%06d', $maxcode + 1);
-            $roadline->user_id = Auth::id();
-            $roadline->name = $data['name'] ? $data['name'] : null;
-            $roadline->hierarchy = $data['hierarchy'] ? $data['hierarchy'] : null;
-            $roadline->surface_type = $data['surface_type'] ? $data['surface_type'] : null;
-            $roadline->length = $data['length'] ? $data['length'] : null;
-            $roadline->right_of_way = $data['right_of_way'] ? $data['right_of_way'] : null;
-            $roadline->carrying_width = $data['carrying_width'] ? $data['carrying_width'] : null;
-            $roadline->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
-            $roadline->save();
-        }
-        else{
-            $roadline = Roadline::find($code);
-            $roadline->user_id = Auth::id();
-            $roadline->name = $data['name'] ? $data['name'] : null;
-            $roadline->hierarchy = $data['hierarchy'] ? $data['hierarchy'] : null;
-            $roadline->surface_type = $data['surface_type'] ? $data['surface_type'] : null;
-            $roadline->length = $data['length'] ? $data['length'] : null;
-            $roadline->right_of_way = $data['right_of_way'] ? $data['right_of_way'] : null;
-            $roadline->carrying_width = $data['carrying_width'] ? $data['carrying_width'] : null;
-            $roadline->save();
+                /* dd('fine till here'); */
+
+                // Prepare data for API
+                $apiData = [
+                    'code' => $roadline->code,
+                    'name' => $roadline->name,
+                    'hierarchy' => $roadline->hierarchy,
+                    'surface_type' => $roadline->surface_type,
+                    'length' => $roadline->length,
+                    'right_of_way' => $roadline->right_of_way,
+                    'carrying_width' => $roadline->carrying_width
+                ];
+
+                // Send data to API
+
+                /* dd($apiData); */
+
+                $apiController = new RoadlineController();
+                $request = new Request();
+                $request->merge($apiData);
+
+                $apiResponse = $apiController->sendRoadData($request);
+
+                // Log API response
+                \Log::channel('roadline')->info('API Response', [
+                    'road_code' => $roadline->code,
+                    'response' => $apiResponse->getContent(),
+                    'timestamp' => Carbon::now()->toDateTimeString()
+                ]);
+            }
+            else {
+                $roadline = Roadline::find($code);
+                $roadline->user_id = Auth::id();
+                $roadline->name = $data['name'] ? $data['name'] : null;
+                $roadline->hierarchy = $data['hierarchy'] ? $data['hierarchy'] : null;
+                $roadline->surface_type = $data['surface_type'] ? $data['surface_type'] : null;
+                $roadline->length = $data['length'] ? $data['length'] : null;
+                $roadline->right_of_way = $data['right_of_way'] ? $data['right_of_way'] : null;
+                $roadline->carrying_width = $data['carrying_width'] ? $data['carrying_width'] : null;
+                $roadline->save();
+
+                // Also send updated data to API
+                $apiData = [
+                    'code' => $roadline->code,
+                    'name' => $roadline->name,
+                    'hierarchy' => $roadline->hierarchy,
+                    'surface_type' => $roadline->surface_type,
+                    'length' => $roadline->length,
+                    'right_of_way' => $roadline->right_of_way,
+                    'carrying_width' => $roadline->carrying_width
+                ];
+                $apiController = new RoadlineController();
+                $request = new Request();
+                $request->merge($apiData);
+
+                $apiController->sendRoadData($request);
+            }
+        } catch (\Exception $e) {
+            \Log::channel('roadline')->error('Road operation failed', [
+                'error' => $e->getMessage(),
+                'data' => $data,
+                'timestamp' => Carbon::now()->toDateTimeString()
+            ]);
+            throw $e;
         }
     }
 

@@ -107,22 +107,29 @@
             serverSide: true,
             ajax: {
                 url: '{{ route('education.school.data') }}',
-                data: function(d) {
+                type: 'GET',              // be explicit
+                dataType: 'json',         // expect JSON
+                data: function (d) {
                     d.institution_name = $('#institution_name').val();
                     d.institution_type = $('#institution_type').val();
-                    d.ward_number = $('#ward_number').val();
-                    d.ownership = $('#ownership').val();
+                    d.ward_number      = $('#ward_number').val();
+                    d.ownership        = $('#ownership').val();
+                },
+                error: function (xhr, error, thrown) {
+                    console.error('DataTables Ajax error:', xhr.status, error, thrown);
+                    console.error(xhr.responseText); // this will show your Laravel error/HTML
+                    alert('Failed to load education data. Check console for details.');
                 }
             },
             columns: [
-                { data: 'custom_school_id', name: 'custom_school_id' },
-                { data: 'name', name: 'name' },
-                { data: 'ward_no', name: 'ward_no' },
-                { data: 'contact_person_name', name: 'contact_person_name' },
+                { data: 'custom_school_id',      name: 'custom_school_id' },
+                { data: 'name',                  name: 'name' },
+                { data: 'ward_no',               name: 'ward_no' },
+                { data: 'type',                  name: 'type' },                 // Type
+                { data: 'ownership',             name: 'ownership' },            // Ownership
+                { data: 'contact_person_name',   name: 'contact_person_name' },
                 { data: 'contact_person_number', name: 'contact_person_number' },
-                { data: 'type', name: 'type' },
-                { data: 'ownership', name: 'ownership' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
+                { data: 'action',                name: 'action', orderable: false, searchable: false }
             ],
             order: [[0, 'asc']]
         });
@@ -141,13 +148,18 @@
             var id = $(this).data('id');
             $.ajax({
                 url: '{{ url("education") }}/' + id,
+                type: 'GET',
                 success: function(data) {
                     $('#educationModal .modal-title').text(data.name);
                     $('#educationModal .modal-body').html(data.detailsHtml);
-                    $('#educationModal').modal('show');
+                    // $('#educationModal').modal('show');
+                },
+                error: function(xhr) {
+                    console.error('Show institution error:', xhr.responseText);
                 }
             });
         });
     });
 </script>
 @endpush
+

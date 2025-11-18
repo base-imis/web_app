@@ -11,6 +11,8 @@ use App\Http\Controllers\BuildingSearchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ViewMapController;
+use App\Http\Controllers\Api\EbpsBuildingController;
+use App\Http\Controllers\Api\RoadlineController;
 
 
 /*
@@ -152,6 +154,10 @@ Route::group([
         });
 
     Route::post('/access-map', [ViewMapController::class, 'accessMap']);
+    Route::post('/roadline-data', [RoadlineController::class, 'sendRoadData']);
+
+    /* Store Building Info */
+    Route::post('/building-info/{ebps_id}/{transaction_type}',[EbpsBuildingController::class,'storeBuildingInfo']);
 
 });
 

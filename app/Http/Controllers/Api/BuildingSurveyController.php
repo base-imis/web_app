@@ -40,26 +40,26 @@ class BuildingSurveyController extends Controller
     public function getRoadWms(){
         return $this->getWmsLink("roads");
     }
-    
-   
+
+
 
     public function getBuildingCodes()
     {
-        try {   
+        try {
             $buildingCodes = Building::whereNull('deleted_at')->pluck('bin');
-            
+
             if ($buildingCodes->isEmpty()) {
                 return response()->json([
                     'status' => 404,
                     'message' => __('No building codes found.'),
                 ], 404);
             }
-            
+
             return response()->json([
                 'status' => 200,
                 'message' => __('Building codes fetched successfully.'),
                 'data' => $buildingCodes,
-               
+
             ]);
         } catch(\Exception $e) {
             return response()->json([
@@ -71,21 +71,21 @@ class BuildingSurveyController extends Controller
 
     public function getSewerCodes()
     {
-        try {   
+        try {
             $sewerCodes = SewerLine::whereNull('deleted_at')->pluck('code');
-            
+
             if ($sewerCodes->isEmpty()) {
                 return response()->json([
                     'status' => 404,
                     'message' => __('No sewer codes found.'),
                 ], 404);
             }
-            
+
             return response()->json([
                 'status' => 200,
                 'message' => __('Sewer codes fetched successfully.'),
                 'data' => $sewerCodes,
-               
+
             ]);
         } catch(\Exception $e) {
             return response()->json([
@@ -113,10 +113,9 @@ class BuildingSurveyController extends Controller
         try {
             if ($request->validated()){
                 $buildingSurvey = BuildingSurvey::create($request->all());
-                
+
                 $buildingSurvey->user_id= Auth::id();
                 $kml = $request->kml;
-
                 if (!$kml) {
                     if ($buildingSurvey){
                         $buildingSurvey->forceDelete();
@@ -200,7 +199,7 @@ class BuildingSurveyController extends Controller
             'message' => __('Service Providers'),
         ];
     }
-  
+
     /**
      * Get link of specified layer
      *
