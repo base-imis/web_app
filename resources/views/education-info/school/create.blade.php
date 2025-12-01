@@ -39,10 +39,14 @@
                 </div>
             </div>
 
-            <div class="form-group row required" id="bin" >
+            <div class="form-group row required" id="bin">
                 {!! Form::label('bin', 'House Number / BIN', ['class' => 'col-sm-3 control-label ']) !!}
-                <div class=col-sm-4>
-                    {!! Form::select('bin', $bin, null, ['class' => 'form-control col-sm-10 bin', 'placeholder' => 'House Number / BIN']) !!}
+                <div class="col-sm-4">
+                    {!! Form::select('bin', $bin, null, [
+                        'class' => 'form-control col-sm-10',
+                        'placeholder' => 'House Number / BIN',
+                        'id' => 'bin_select',
+                    ]) !!}
                 </div>
             </div>
 
@@ -449,3 +453,15 @@
     </div>
 </div>
 @stop
+
+@push('scripts')
+<script>
+    $(function () {
+        $('#bin_select').select2({
+            placeholder: 'House Number / BIN',
+            allowClear: true,
+            width: '85%'   // or '100%' if you want full width
+        });
+    });
+</script>
+@endpush

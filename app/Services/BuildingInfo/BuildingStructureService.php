@@ -971,6 +971,7 @@ class BuildingStructureService
             ->LeftJoin('building_info.sanitation_systems', 'building_info.buildings.sanitation_system_id', '=', 'building_info.sanitation_systems.id')
             ->select(
                 'building_info.buildings.bin AS bin',
+                'building_info.buildings.ebps_id AS ebps_id',
                 'building_info.buildings.house_number AS house_number',
                 'building_info.buildings.structure_type_id AS structure_type_id',
                 'building_info.structure_types.type AS type',
@@ -980,7 +981,8 @@ class BuildingStructureService
                 'building_info.buildings.toilet_status AS toilet_status',
                 'building_info.buildings.road_code AS road_code',
                 'building_info.owners.owner_name AS owner_name',
-                'building_info.sanitation_systems.sanitation_system as sanitation_system_id'
+                'building_info.sanitation_systems.sanitation_system as sanitation_system_id',
+                'building_info.buildings.construction_status AS construction_status'
             )
             ->whereNull('building_info.buildings.deleted_at');
         return DataTables::of($buildingData)
