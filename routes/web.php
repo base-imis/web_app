@@ -106,6 +106,16 @@ Route::group([
     Route::resource('building-surveys', 'BuildingSurveyController');
 });
 
+
+Route::group([
+    'name' => 'containment.management',
+    'prefix' => 'containment-management',
+    'namespace' => 'Containmentmngmtinfo',
+    'middleware' => 'auth'
+], function () {
+    Route::get('containment-management', 'ContainmentManagementController@index')->name('containment.index');
+});
+
     /**
      * Layer Info
      */
@@ -525,6 +535,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('maps/check-location-within-boundary','MapsController@checkLocationWithinBoundary');
     Route::get('maps/toilet-isochrone', 'MapsController@getToiletIsochroneAreaLayers');
    Route::get('/proxy-wms', 'MapsController@proxyWms');
+   Route::get('maps/building-school-buffer-info', 'MapsController@buildingSchoolBufferInfo')->name('maps.building-school-buffer-info');
 
 });
 

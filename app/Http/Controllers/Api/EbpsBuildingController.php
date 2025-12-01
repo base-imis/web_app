@@ -257,6 +257,29 @@ class EbpsBuildingController extends Controller
         }
     }
 
+
+    private function mapContainmentLocation(?string $location): ?string
+    {
+        if (!$location) {
+            return null;
+        }
+
+        $location = trim(strtolower($location));
+
+        // Any value containing "inside"
+        if (str_contains($location, 'inside')) {
+            return 'Inside the house';
+        }
+
+        // Any value containing "outside"
+        if (str_contains($location, 'outside')) {
+            return 'Outside the house';
+        }
+
+        // Default fallback (optional)
+        return null;
+    }
+
     private function createContainmentAndLink(string $bin, array $data): ?string
     {
         // Skip if no septic fields present
@@ -271,11 +294,12 @@ class EbpsBuildingController extends Controller
 
         // Generate next containment id
         $containmentId = $this->nextContainmentId();
+        $mappedLocation = $this->mapContainmentLocation(data_get($data, 'SepticTankLocation'));
 
         // Insert into fsm.containments
         DB::table('fsm.containments')->insert([
             'id'          => $containmentId,
-            'location'    => data_get($data, 'SepticTankLocation'),
+            'location'    => $mappedLocation,
             'tank_length' => data_get($data, 'SepticTankLength'),
             'tank_width'  => data_get($data, 'SepticTankWidth'),
             'depth'       => data_get($data, 'SepticTankDepth'),

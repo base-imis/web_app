@@ -121,7 +121,7 @@ class ContainmentService
                 return $content;
             })
             ->editColumn('type_id', function ($model) {
-                return $model->containmentType->type;
+                return optional($model->containmentType)->type ?? 'N/A';
             })
 
             ->make(true);
@@ -138,7 +138,7 @@ class ContainmentService
                 ->where('bc.bin', $request->id)
                 ->whereNull('bc.deleted_at')
                 ->get();
-        
+
         return DataTables::of($containmentData)
             ->addColumn('action', function ($model, Request $request) {
 

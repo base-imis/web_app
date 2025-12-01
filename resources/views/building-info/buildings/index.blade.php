@@ -218,6 +218,7 @@
                         <thead>
                             <tr>
                                 <th>{{ __('BIN') }}</th>
+                                <th>{{ __('EBPS ID') }}</th>
                                 <th>{{ __('House Number') }}</th>
                                 <th>{{ __('Road Code') }}</th>
                                 <th>{{ __('Ward Number') }}</th>
@@ -226,6 +227,7 @@
                                 <th>{{ __('Presence of Toilet') }}</th>
                                 <th>{{ __('Sanitation System') }}</th>
                                 <th>{{ __('Owner Name') }}</th>
+                                <th>{{ __('Construction Status')}}</th>
                                 <th>{{ __('Actions') }}</th>
 
                             </tr>
@@ -245,6 +247,7 @@
         $(function() {
 
             var bin = '';
+            var ebps_id = '';
             var house_number = '';
             var structype = '';
             var ward = '';
@@ -254,6 +257,7 @@
             var ownername = '';
             var sanitation_system_id = '';
             var floor_count = '';
+            var construction_status = '';
 
             var dataTable = $('#data-table').DataTable({
 
@@ -267,6 +271,7 @@
                     url: '{!! url('building-info/buildings/data') !!}',
                     data: function(d) {
                         d.bin = $('#bin_text').val();
+                        d.ebps_id = $('#ebps_id').val();
                         d.house_number = $('#house_number').val();
                         d.structype = $('#structype_select').val();
                         d.ward = $('#ward_select').val();
@@ -283,6 +288,7 @@
                         d.date_from = $('#date_from').val();
                         d.date_to = $('#date_to').val();
                         d.use_category_select = $('#use_category_select').val();
+                        d.construction_status = $('#construction_status').val();
 
 
 
@@ -291,6 +297,10 @@
                 columns: [{
                         data: 'bin',
                         name: 'bin'
+                    },
+                    {
+                        data: 'ebps_id',
+                        name: 'ebps_id'
                     },
                     {
                         data: 'house_number',
@@ -323,6 +333,10 @@
                     {
                         data: 'owner_name',
                         name: 'owner_name'
+                    },
+                    {
+                        data: 'construction_status',
+                        name: 'construction_status'
                     },
                     {
                         data: 'action',

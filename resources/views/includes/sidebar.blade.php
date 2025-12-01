@@ -183,6 +183,22 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+
+                                <li class="nav-item">
+                                    <a href="{{ route('containment.index') }}"
+                                       class="nav-link {{ (request()->is('containment-management*')) ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p> Standard ST Monitoring Dashboard</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#"
+                                       class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Containment Inspections</p>
+                                    </a>
+                                </li>
+
                                 @can('List Containments')
                                 <li class="nav-item">
                                     <a href="{{ action('Fsm\ContainmentController@index') }}" class="nav-link {{ request()->is('fsm/containments','fsm/containments/*') ? 'active' : '' }}">
@@ -190,7 +206,9 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                                         <p>{{__('Containments')}}</p>
                                     </a>
                                 </li>
+
                                 @endcan
+
 
                             </ul>
                         </li>
