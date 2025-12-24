@@ -71,6 +71,9 @@ class RolesSeeder extends Seeder
             [
                 'name' => 'Guest',
             ],
+            [
+                'name' => 'Municipality - Map Viewer',
+            ],
         ];
         foreach ($roles as $role){
             Role::updateOrCreate($role);
