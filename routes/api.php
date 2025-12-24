@@ -157,7 +157,7 @@ Route::group([
     Route::post('/roadline-data', [RoadlineController::class, 'sendRoadData']);
 
     /* Store Building Info */
-    Route::post('/building-info/{ebps_id}/{transaction_type}',[EbpsBuildingController::class,'storeBuildingInfo']);
+    Route::post('/building-info/{transaction_type}',[EbpsBuildingController::class,'storeBuildingInfo']);
 
 });
 
