@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\ApiServiceController;
 use App\Http\Controllers\MapsController;
 use App\Http\Controllers\Proxy\WMSProxyController;
 use App\Http\Controllers\Api\ViewMapController;
+use App\Http\Controllers\Fsm\SepticTankDashboardController;
+use App\Http\Controllers\Fsm\ContainmentInspectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -114,6 +116,25 @@ Route::group([
     'middleware' => 'auth'
 ], function () {
     Route::get('containment-management', 'ContainmentManagementController@index')->name('containment.index');
+});
+
+
+
+Route::prefix('fsm')->group(function () {
+    Route::get('/septic-tank-dashboard', [SepticTankDashboardController::class, 'index'])
+        ->name('fsm.septic_tank_dashboard');
+
+    // Optional API endpoints for Chart.js
+    Route::get('/septic-tank-dashboard/chart/requests-per-ward', [SepticTankDashboardController::class, 'requestPerWardChart']);
+    Route::get('/septic-tank-dashboard/chart/completed-per-ward', [SepticTankDashboardController::class, 'completedPerWardChart']);
+});
+
+
+Route::prefix('fsm')->group(function () {
+    Route::get('containment-inspection', [ContainmentInspectionController::class, 'index'])->name('fsm.containment_inspection');
+    Route::get('containment-inspection/data', [ContainmentInspectionController::class, 'data']);
+    Route::get('containment-inspection/{ebps_id}', [ContainmentInspectionController::class, 'show']);
+    /* Route::get('containment-inspection/{ebps_id}/edit', [ContainmentInspectionController::class, 'edit']); */
 });
 
     /**

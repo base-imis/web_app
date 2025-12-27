@@ -185,14 +185,14 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             <ul class="nav nav-treeview">
 
                                 <li class="nav-item">
-                                    <a href="{{ route('containment.index') }}"
+                                    <a href="{{ route('fsm.septic_tank_dashboard') }}"
                                        class="nav-link {{ (request()->is('containment-management*')) ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p> Standard ST Monitoring Dashboard</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#"
+                                    <a href="{{ route('fsm.containment_inspection') }}"
                                        class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Containment Inspections</p>
