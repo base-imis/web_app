@@ -388,10 +388,6 @@ class EbpsBuildingController extends Controller
     /* -------------------- placeholders (keep your originals) -------------------- */
 
 
-    protected function getSuperStructureData(Request $request) {
-        return response()->json(['success'=>false,'message'=>'Not implemented'],501);
-    }
-
      // Super Structuture.
     protected function handleSuperStructure( Request $request)
     {
@@ -882,12 +878,6 @@ class EbpsBuildingController extends Controller
 
     }
 
-
-
-
-
-
-
     protected function handleBuildingComplition(Request $request)
     {
         try {
@@ -910,9 +900,13 @@ class EbpsBuildingController extends Controller
 
             // Save flat table + also update building/owner/containment (next step)
             $this->insertCompletionDataInFlatTable($data);
-            $this->upseertBuildingFromEbps($data);
-            $this->upsertOwnerFromEbps($data['Bldgprmt_TID'], $data);
-            $this->createContainmentAndLink($data['Bldgprmt_TID'], $data);
+            $building = $this->upsertCompletionBuildingFromEBPS($data);
+            $this->saveCompletionImagesByBin(
+                $building->bin,
+                $data['Photos'] ?? []
+            );
+            $this->upsertCompletionOwnerFromEBPS($building->bin, $data);
+            $this->upsertCompletionContainmentFromEBPS($building->bin, $data);
 
             return response()->json([
                 'success' => true,
@@ -932,7 +926,6 @@ class EbpsBuildingController extends Controller
             ], 500);
         }
     }
-
 
     protected function insertCompletionDataInFlatTable(array $data){
     // ---------- 1) EBPS ID & image saving ----------
@@ -1042,6 +1035,226 @@ class EbpsBuildingController extends Controller
             'created_at'  => Carbon::now(),
             'updated_at'  => Carbon::now(),
     ]);
+    }
+
+    protected function saveCompletionImagesByBin(string $bin, array $photos): void
+    {
+        if (empty($photos)) {
+            return;
+        }
+
+        $folder = 'ebps_photos/' . $bin;
+        Storage::disk('public')->makeDirectory($folder);
+
+        foreach ($photos as $index => $photo) {
+            if ($index > 2) break; // max 3 images
+
+            $slot    = $index + 1;
+            $base64  = $photo['Base64Image'] ?? null;
+            $docFile = $photo['DocImgFile'] ?? null;
+
+            if (!$base64) continue;
+
+            $ext = pathinfo($docFile ?? '', PATHINFO_EXTENSION) ?: 'jpg';
+            $fileName = 'completion_' . $slot . '.' . $ext;
+            $path = $folder . '/' . $fileName;
+
+            try {
+                if (str_contains($base64, 'base64,')) {
+                    $base64 = explode('base64,', $base64)[1];
+                }
+
+                $decoded = base64_decode($base64);
+                if ($decoded === false) continue;
+
+                Storage::disk('public')->put($path, $decoded);
+
+            } catch (\Throwable $e) {
+                \Log::channel('ebps')->error('Completion image save failed', [
+                    'bin'   => $bin,
+                    'slot'  => $slot,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    protected function upsertCompletionBuildingFromEBPS(array $data): Building
+    {
+        $ebpsId = (string) (
+        data_get($data, 'Bldgprmt_TID') ??
+        data_get($data, 'Bldgprmt_tid') ??
+        data_get($data, 'BldgPrmt_TID')
+        );
+
+        if ($ebpsId === '') {
+        throw new \InvalidArgumentException('Bldgprmt_TID (EBPS ID) is required for Completion.');
+        }
+
+        $constructionStatus = 'Completion';
+        $building = Building::where('ebps_id', $ebpsId)->first();
+
+        // ---------------- CASE 1: Not found → create new building + BIN ----------------
+        if (!$building) {
+            $building = new Building();
+
+            $maxBIN  = Building::max('bin'); // 'B000123' or null
+            $numeric = (int) preg_replace('/\D/', '', $maxBIN ?? '0');
+            $building->bin = 'B' . sprintf('%06d', $numeric + 1);
+
+            $building->ebps_id = $ebpsId;
+        }
+
+            // ---------------- CASE 2: Found → update existing building ----------------
+            $building->ebps_id = $ebpsId;
+            $building->construction_status = $constructionStatus;
+
+            // Completion payload uses Location (not ToleName usually)
+            $ward     = data_get($data, 'Ward');      // may be null in completion
+            $locality = data_get($data, 'Location')   // completion payload
+                    ?? data_get($data, 'ToleName');   // fallback
+
+            if (!is_null($ward)) {
+                $building->ward = $ward;
+            }
+            if (!is_null($locality)) {
+                $building->house_locality = $locality;
+            }
+
+            $taxCode = data_get($data, 'tax_code');
+            if (!is_null($taxCode)) {
+                $building->tax_code = $taxCode;
+            }
+
+            $floors = data_get($data, 'NoOfStorey');
+            if (!is_null($floors)) {
+                $building->floor_count = (int) $floors;
+            }
+
+            // Use category ("Residential", etc.)
+            $useCategoryName = (string) data_get($data, 'buildingPurposeNm');
+            if (!empty($useCategoryName)) {
+                $useCategoryId = $this->resolveUseCategoryIdByName($useCategoryName);
+                if ($useCategoryId) {
+                    $building->use_category_id = $useCategoryId;
+                }
+            }
+
+            // Prefer field footprint over designer footprint
+            $footprintJson = data_get($data, 'Field_footprint')
+                ?: data_get($data, 'Designer_footprint');
+
+            $geomExpr = $this->buildMultiPolygonFromFootprint($footprintJson);
+            if ($geomExpr) {
+                $building->geom = $geomExpr;
+            }
+
+            $building->save();
+
+            return $building;
+
+    }
+
+    protected function upsertCompletionOwnerFromEBPS(string $bin, array $data): void
+    {
+        $ownerName = data_get($data, 'HouseOwnerNm');
+        $gender    = data_get($data, 'gender');
+        $phone     = data_get($data, 'contact_no');
+
+        $ownerGender = $gender !== null ? trim($gender) : null;
+        $now         = now();
+
+        // If payload has nothing, skip (optional)
+        if (is_null($ownerName) && is_null($ownerGender) && is_null($phone)) {
+            return;
+        }
+
+        $query  = DB::table('building_info.owners')->where('bin', $bin);
+        $exists = $query->whereNull('deleted_at')->exists(); // if soft delete
+
+        // Null-safe update (don’t wipe with null)
+        $payload = array_filter([
+            'owner_name'    => $ownerName,
+            'owner_gender'  => $ownerGender,
+            'owner_contact' => $phone,
+            'updated_at'    => $now,
+        ], fn($v) => $v !== null && $v !== '');
+
+        if ($exists) {
+            $query->update($payload);
+        } else {
+            DB::table('building_info.owners')->insert($payload + [
+                'bin'        => $bin,
+                'created_at' => $now,
+            ]);
+        }
+    }
+    protected function upsertCompletionContainmentFromEBPS(string $bin, array $data): ?string
+    {
+        // Completion often has septic fields null → skip when fully missing
+        if (
+            is_null(data_get($data, 'SepticTankLength')) &&
+            is_null(data_get($data, 'SepticTankWidth')) &&
+            is_null(data_get($data, 'SepticTankDepth')) &&
+            is_null(data_get($data, 'SepticTankLocationSanitation'))
+        ) {
+            return null;
+        }
+
+        $now = now();
+
+        $rawLocation    = data_get($data, 'SepticTankLocationSanitation');
+        $mappedLocation = $rawLocation; // or $this->mapContainmentLocation($rawLocation);
+
+        $length = data_get($data, 'SepticTankLength');
+        $width  = data_get($data, 'SepticTankWidth');
+        $depth  = data_get($data, 'SepticTankDepth');
+
+        // Check if BIN already linked to containment
+        $existingLink = DB::table('building_info.build_contains')
+            ->where('bin', $bin)
+            ->first();
+
+        // Null-safe update fields
+        $update = array_filter([
+            'location'    => $mappedLocation,
+            'tank_length' => $length,
+            'tank_width'  => $width,
+            'depth'       => $depth,
+            'updated_at'  => $now,
+        ], fn($v) => $v !== null && $v !== '');
+
+        if ($existingLink) {
+            $containmentId = $existingLink->containment_id;
+
+            DB::table('fsm.containments')
+                ->where('id', $containmentId)
+                ->update($update);
+
+            return $containmentId;
+        }
+
+        // No link → create new containment + link
+        $containmentId = $this->nextContainmentId();
+
+        DB::table('fsm.containments')->insert(array_filter([
+            'id'          => $containmentId,
+            'location'    => $mappedLocation,
+            'tank_length' => $length,
+            'tank_width'  => $width,
+            'depth'       => $depth,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ], fn($v) => $v !== null && $v !== ''));
+
+        DB::table('building_info.build_contains')->insert([
+            'bin'            => $bin,
+            'containment_id' => $containmentId,
+            'created_at'     => $now,
+            'updated_at'     => $now,
+        ]);
+
+        return $containmentId;
     }
 
 

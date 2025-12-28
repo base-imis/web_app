@@ -482,7 +482,7 @@ class DashboardService
         LEFT JOIN building_info.structure_types st
         ON st.id = b.structure_type_id
         WHERE e.deleted_at IS NULL
-        GROUP BY st.id
+        GROUP BY st.id, st.type
         ORDER BY st.id';
 
         $results = DB::select($query);
@@ -1543,7 +1543,7 @@ class DashboardService
             ->select('s.sanitation_system', 's.icon_name', DB::raw('COUNT(b.bin) as bin_count'))
             ->where('s.dashboard_display', true)
             ->where('b.deleted_at', null)
-            ->groupBy('s.sanitation_system', 's.id')
+            ->groupBy('s.sanitation_system', 's.id','s.icon_name')
             ->orderBy('s.id', 'asc')
             ->get();
     }
