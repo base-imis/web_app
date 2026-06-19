@@ -157,7 +157,11 @@ Route::group([
     Route::post('/roadline-data', [RoadlineController::class, 'sendRoadData']);
 
     /* Store Building Info */
+    Route::get('/bulkbuilding/status/{jobId}', [EbpsBuildingController::class, 'bulkStatus']);
+
+    Route::post('/bulkbuilding/{transaction_type}',[EbpsBuildingController::class,'storeBulkBuilding']);
     Route::post('/building-info/{transaction_type}',[EbpsBuildingController::class,'storeBuildingInfo']);
+
 
 });
 

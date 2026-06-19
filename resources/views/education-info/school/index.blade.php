@@ -23,7 +23,7 @@
     <div class="card">
         <div class="card-header">
             @can('Add Education')
-                <a href="{{ route('education.school.create') }}" class="btn btn-info">Add Institution</a>
+                <a href="{{ route('education.school.create') }}" class="btn btn-info">Add School</a>
             @endcan
             @can('Export Education')
                 <a href="{{-- {{ route('education.export') }} --}}" class="btn btn-info">Export CSV</a>
