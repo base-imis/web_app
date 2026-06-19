@@ -109,6 +109,7 @@ Class EducationService
             $school = School::findOrFail($id);
 
             // Fill basic info
+            $school->bin = $request->bin;
             $school->name = $request->name;
             $school->headteacher_name = $request->headteacher_name;
             $school->contact_person_name = $request->contact_person_name;

@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;                 // CHANGED: ensure DB facade is imported
@@ -10,6 +10,7 @@ use App\Models\BuildingInfo\Building;             // CHANGED: Eloquent model mus
 use App\Models\BuildingInfo\UseCategory;          // CHANGED: used to map purpose name -> id
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Jobs\ProcessBulkBuildingJob;
 
 class EbpsBuildingController extends Controller
 {
@@ -17,8 +18,68 @@ class EbpsBuildingController extends Controller
      * Entry point called by your route:
      * /api/building-info/{ebps_id}/{transaction_type}
      */
+
+
+    public function bulkStatus(string $jobId)
+    {
+        $status = Cache::get("bulkbuilding:status:$jobId", "processing");
+        $result = Cache::get("bulkbuilding:result:$jobId");
+
+        return response()->json([
+            'success' => true,
+            'status'  => $status,
+            'summary' => $result, // null until done/failed
+        ]);
+    }
+    public function storeBulkBuilding(string $transaction_type, Request $request)
+    {
+        // accept both {records:[...]} or top-level [...]
+        $records = $request->input('records');
+        if (!is_array($records) || count($records) === 0) {
+            $all = $request->all();
+            if (is_array($all) && isset($all[0]) && is_array($all[0])) {
+                $records = $all;
+            }
+        }
+
+        if (!is_array($records) || count($records) === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'records must be a non-empty array'
+            ], 422);
+        }
+
+        // ✅ safety: ensure runtime queue is correct (remove later)
+        if (config('queue.default') !== 'database') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Queue is not set to database at runtime',
+                'runtime_queue' => config('queue.default')
+            ], 500);
+        }
+
+        $jobId = (string) Str::uuid();
+
+        Cache::put("bulkbuilding:payload:$jobId", [
+            'transaction_type' => $transaction_type,
+            'records' => $records,
+            'submitted_at' => now()->toDateTimeString(),
+        ], now()->addHours(6));
+
+        Cache::put("bulkbuilding:status:$jobId", "queued", now()->addHours(6));
+
+        ProcessBulkBuildingJob::dispatch($jobId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bulk import queued',
+            'job_id'  => $jobId
+        ], 202);
+    }
+
     public function storeBuildingInfo($transaction_type, Request $request)
     {
+
         try {
             if ($transaction_type === 'ApplicationForVacantLand') {
                 return $this->handleVacantLand( $request);  // CHANGED: thin entry, delegates work
@@ -38,7 +99,7 @@ class EbpsBuildingController extends Controller
 
         } catch (\Throwable $e) {
             \Log::channel('ebps')->error('Failed in storeBuildingInfo method', [
-                'ebps_id'         => $ebps_id,
+                /* 'ebps_id'         => $ebps_id, */
                 'transaction_type'=> $transaction_type,
                 'error'           => $e->getMessage(),
                 'timestamp'       => Carbon::now()->toDateTimeString()
@@ -229,15 +290,33 @@ class EbpsBuildingController extends Controller
         ));
     }
 
-    /* ---------------------------- helpers: OWNER ----------------------------- */
-
     // NEW: upsert owner in building_info.owners using same BIN as building
     protected function upsertOwnerFromEbps(string $bin, array $data): void
     {
+
+        $rawOwner = data_get($data, 'HouseOwnerNm');
+        $rawGender = data_get($data, 'gender');
+        $rawPhone  = data_get($data, 'contact_no');
+        $rawNid    = data_get($data, 'citizenshipNum');
+
+        if (is_array($rawOwner)) {
+            $ownerName = implode(', ', array_filter($rawOwner));
+        } else {
+            $parts = array_map('trim', explode(',', (string)$rawOwner));
+            $ownerName = implode(', ', array_filter($parts));
+        }
+        $normalize = function ($value) {
+            if (is_array($value)) {
+                return implode(', ', array_filter($value));
+            }
+
+            $parts = array_map('trim', explode(',', (string)$value));
+            return implode(', ', array_filter($parts));
+        };
         $ownerName   = data_get($data, 'HouseOwnerNm');
-        $ownerGender = data_get($data, 'gender');
-        $ownerPhone  = data_get($data, 'contact_no');
-        $nid         = data_get($data, 'citizenshipNum');
+        $ownerGender = $normalize($rawGender);
+        $ownerPhone  = $normalize($rawPhone);
+        $nid         = $normalize($rawNid);
 
         // If there’s an owners model, use it; otherwise, raw table insert/update
         // Here we use raw table to avoid guessing your Eloquent model name.
@@ -270,7 +349,6 @@ class EbpsBuildingController extends Controller
         }
     }
 
-
     private function mapContainmentLocation(?string $location): ?string
     {
         if (!$location) {
@@ -293,6 +371,33 @@ class EbpsBuildingController extends Controller
         return null;
     }
 
+    private function mapOutletPipeToContainmentTypeLabel(?string $outlet): ?string
+    {
+        $v = strtolower(trim((string)$outlet));
+
+        if ($v === '' ) return null;
+
+        // normalize common variants
+        $v = str_replace(['sewer network', 'sewer'], 'sewer network', $v);
+        $v = str_replace(['soakpit', 'soak-pit'], 'soak pit', $v);
+
+        return match (true) {
+            str_contains($v, 'sewer network') => 'Septic Tank connected to Sewer Network',
+            str_contains($v, 'soak pit')      => 'Septic Tank connected to Soak Pit',
+            $v === 'none' || str_contains($v, 'without') || str_contains($v, 'no outlet')
+                                            => 'Septic Tank without Outlet Connection',
+            default                            => null, // unknown -> leave null (or choose "Unknown Outlet Connection")
+        };
+    }
+    private function getContainmentTypeIdByLabel(?string $label): ?int
+    {
+        if (!$label) return null;
+
+        return DB::table('fsm.containment_types')
+            ->where('type', $label)
+            ->value('id');
+    }
+
     private function createContainmentAndLink(string $bin, array $data): ?string
     {
         // Skip if no septic fields present
@@ -307,6 +412,8 @@ class EbpsBuildingController extends Controller
         }
 
         $mappedLocation = $this->mapContainmentLocation(data_get($data, 'SepticTankLocation'));
+        $outletLabel = $this->mapOutletPipeToContainmentTypeLabel(data_get($data, 'SepticOutletpipe'));
+        $typeId      = $this->getContainmentTypeIdByLabel($outletLabel);
         $now            = now();
 
         // 🔹 Check if this BIN already has a containment link
@@ -321,6 +428,7 @@ class EbpsBuildingController extends Controller
             DB::table('fsm.containments')
                 ->where('id', $containmentId)
                 ->update([
+                    'type_id'      => $typeId,  
                     'location'    => $mappedLocation,
                     'tank_length' => data_get($data, 'SepticTankLength'),
                     'tank_width'  => data_get($data, 'SepticTankWidth'),
@@ -336,6 +444,7 @@ class EbpsBuildingController extends Controller
 
         DB::table('fsm.containments')->insert([
             'id'          => $containmentId,
+            'type_id'      => $typeId,  
             'location'    => $mappedLocation,
             'tank_length' => data_get($data, 'SepticTankLength'),
             'tank_width'  => data_get($data, 'SepticTankWidth'),
@@ -363,9 +472,6 @@ class EbpsBuildingController extends Controller
         return 'C' . str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 
-
-    /* ------------------------------ misc utils ------------------------------ */
-
     // NEW: tiny validator for required keys; returns JSON 422 or null
     protected function validateRequired(array $data, array $requiredKeys){
         $missing = [];
@@ -384,9 +490,6 @@ class EbpsBuildingController extends Controller
         }
         return null;
     }
-
-    /* -------------------- placeholders (keep your originals) -------------------- */
-
 
      // Super Structuture.
     protected function handleSuperStructure( Request $request)
@@ -635,11 +738,19 @@ class EbpsBuildingController extends Controller
 
     protected function upsertOwnerFromSS(string $bin, array $data): void
     {
-        $ownerName = data_get($data, 'HouseOwnerNm');          // "Anjana Giri"
-        $gender    = data_get($data, 'gender');                // " Female"
-        $phone     = data_get($data, 'contact_no');            // "9823568098"
+         $normalize = function ($value) {
+        if (is_array($value)) {
+            return implode(', ', array_filter(array_map('trim', $value)));
+        }
 
-        $ownerGender = $gender !== null ? trim($gender) : null; // remove leading space
+        $parts = array_map('trim', explode(',', (string)$value));
+        return implode(', ', array_filter($parts));
+        };
+
+        $ownerName   = $normalize(data_get($data, 'HouseOwnerNm'));   // supports multiple
+        $ownerGender = $normalize(data_get($data, 'gender'));         // supports multiple
+        $phone       = $normalize(data_get($data, 'contact_no'));     // supports multiple
+
         $now         = now();
 
         // Check if an owner already exists for this BIN (active row)
@@ -654,7 +765,7 @@ class EbpsBuildingController extends Controller
                 'updated_at'    => $now,
             ]);
         } else {
-            // ➕ INSERT new owner
+            
             DB::table('building_info.owners')->insert([
                 'bin'           => $bin,
                 'owner_name'    => $ownerName,
@@ -668,7 +779,7 @@ class EbpsBuildingController extends Controller
     }
 
 
-    protected function upsertSSContainmentFromEBPS(string $bin, array $data): ?string{
+   /*  protected function upsertSSContainmentFromEBPS(string $bin, array $data): ?string{
 
             if (
                 is_null(data_get($data, 'SepticTankLength')) &&
@@ -691,10 +802,7 @@ class EbpsBuildingController extends Controller
                 ->where('bin', $bin)
                 ->first();
 
-        /*  dd('EXISTING LINK?', [
-                'bin'          => $bin,
-                'existingLink' => $existingLink,
-            ]); */
+      
 
             if ($existingLink) {
                 // -------- UPDATE existing containment --------
@@ -714,15 +822,6 @@ class EbpsBuildingController extends Controller
             }
             else {
                     $containmentId = $this->nextContainmentId();
-
-                /*   dd('GOING TO INSERT', [
-                        'bin'            => $bin,
-                        'containment_id' => $containmentId,
-                        'length'         => $length,
-                        'width'          => $width,
-                        'depth'          => $depth,
-                        'loc'            => $mappedLocation,
-                    ]); */
 
                     DB::table('fsm.containments')->insert([
                         'id'          => $containmentId,
@@ -765,7 +864,84 @@ class EbpsBuildingController extends Controller
             ]);
 
             return $containmentId;
+    } */
+   
+    private function resolveContainmentTypeIdFromOutlet(?string $outlet): ?int{
+        $v = strtolower(trim((string)$outlet));
+
+        $label = match (true) {
+            str_contains($v, 'sewer') => 'Septic Tank connected to Sewer Network',
+            str_contains($v, 'soak')  => 'Septic Tank connected to Soak Pit',
+            $v === 'none' || $v === '' || str_contains($v, 'without')
+                                    => 'Septic Tank without Outlet Connection',
+            default                   => 'Septic Tank with Unknown Outlet Connection', // safer
+        };
+
+        return DB::table('fsm.containment_types')
+            ->where('type', $label)
+            ->value('id');
     }
+
+    protected function upsertSSContainmentFromEBPS(string $bin, array $data): ?string{
+        // Super Structure payload keys
+        $length   = data_get($data, 'SepticTankLength');
+        $width    = data_get($data, 'SepticTankWidth');
+        $depth    = data_get($data, 'SepticTankDepth');
+        $location = data_get($data, 'SepticTankLocationSanitation'); // SS key
+        $outlet   = data_get($data, 'SepticOutletpipe');             // e.g. "Soak Pit"
+
+        // skip if no septic fields
+        if ($length === null && $width === null && $depth === null && $location === null) {
+            return null;
+        }
+
+        $now    = now();
+        $typeId = $this->resolveContainmentTypeIdFromOutlet($outlet); // helper below
+
+        $existingLink = DB::table('building_info.build_contains')
+            ->where('bin', $bin)
+            ->first();
+
+        if ($existingLink) {
+            $containmentId = $existingLink->containment_id;
+
+            DB::table('fsm.containments')
+                ->where('id', $containmentId)
+                ->update([
+                    'type_id'     => $typeId,
+                    'location'    => $location,
+                    'tank_length' => $length,
+                    'tank_width'  => $width,
+                    'depth'       => $depth,
+                    'updated_at'  => $now,
+                ]);
+
+            return (string) $containmentId;
+        }
+
+        $containmentId = $this->nextContainmentId();
+
+        DB::table('fsm.containments')->insert([
+            'id'          => $containmentId,
+            'type_id'     => $typeId,
+            'location'    => $location,
+            'tank_length' => $length,
+            'tank_width'  => $width,
+            'depth'       => $depth,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ]);
+
+        DB::table('building_info.build_contains')->insert([
+            'bin'            => $bin,
+            'containment_id' => $containmentId,
+            'created_at'     => $now,
+            'updated_at'     => $now,
+        ]);
+
+        return (string) $containmentId;
+    }
+
 
     protected function createSSContainmentInspectionAndQuestions(array $data): ?string{
         $ebpsId = data_get($data, 'Bldgprmt_TID');
@@ -1157,11 +1333,21 @@ class EbpsBuildingController extends Controller
 
     protected function upsertCompletionOwnerFromEBPS(string $bin, array $data): void
     {
-        $ownerName = data_get($data, 'HouseOwnerNm');
-        $gender    = data_get($data, 'gender');
-        $phone     = data_get($data, 'contact_no');
+        $normalize = function ($value) {
+        if ($value === null) return null;
 
-        $ownerGender = $gender !== null ? trim($gender) : null;
+        if (is_array($value)) {
+            $parts = array_filter(array_map('trim', $value));
+            return $parts ? implode(', ', $parts) : null;
+        }
+
+        $parts = array_filter(array_map('trim', explode(',', (string)$value)));
+        return $parts ? implode(', ', $parts) : null;
+        };
+
+        $ownerName   = $normalize(data_get($data, 'HouseOwnerNm'));
+        $ownerGender = $normalize(data_get($data, 'gender'));
+        $phone       = $normalize(data_get($data, 'contact_no'));
         $now         = now();
 
         // If payload has nothing, skip (optional)

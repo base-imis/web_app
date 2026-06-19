@@ -174,6 +174,71 @@ class EducationController extends Controller
                 ]]
             ];
 
+            $activeSchools = DB::table('educationinfo.schools')->whereNull('deleted_at');
+
+            $enrollmentSummary = (clone $activeSchools)
+                ->selectRaw('
+                    COALESCE(SUM(total_students), 0) as total_students,
+                    COALESCE(SUM(total_girls), 0) as total_girls,
+                    COALESCE(SUM(total_boys), 0) as total_boys,
+                    COALESCE(SUM(total_other), 0) as total_other,
+                    COALESCE(SUM(teachers_total), 0) as teachers_total,
+                    COALESCE(SUM(support_staff_total), 0) as support_staff_total
+                ')
+                ->first();
+
+            $sanitationSummary = (clone $activeSchools)
+                ->selectRaw('
+                    COALESCE(SUM(COALESCE(toilet_teacher_total, 0) + COALESCE(toilet_student_total, 0)), 0) as toilet_total,
+                    COALESCE(SUM(COALESCE(urinal_teacher_total, 0) + COALESCE(urinal_student_total, 0)), 0) as urinal_total,
+                    COALESCE(SUM(COALESCE(handwash_teacher_total, 0) + COALESCE(handwash_student_total, 0)), 0) as handwash_total,
+                    COALESCE(SUM(universal_design_toilet_count), 0) as universal_design_toilet_total,
+                    COALESCE(SUM(CASE WHEN soap_and_water_available = true THEN 1 ELSE 0 END), 0) as soap_water_available_schools
+                ')
+                ->first();
+
+            $schoolTypeRows = collect($schoolTypeCount['labels'])
+                ->zip($schoolTypeCount['datasets'][0]['data'])
+                ->map(fn($item) => ['label' => $item[0], 'count' => $item[1]])
+                ->values()
+                ->all();
+
+            $wardStats = (clone $activeSchools)
+                ->select('ward_no')
+                ->selectRaw('COUNT(*) as schools, COALESCE(SUM(total_students), 0) as students')
+                ->groupBy('ward_no')
+                ->orderBy('ward_no')
+                ->get();
+
+            $waterSourceStats = (clone $activeSchools)
+                ->selectRaw("COALESCE(NULLIF(main_drinking_water_source, ''), 'Not Recorded') as label, COUNT(*) as count")
+                ->groupByRaw("COALESCE(NULLIF(main_drinking_water_source, ''), 'Not Recorded')")
+                ->orderByDesc('count')
+                ->get();
+
+            $toiletConnectionStats = (clone $activeSchools)
+                ->selectRaw("COALESCE(NULLIF(toilet_connection, ''), 'Not Recorded') as label, COUNT(*) as count")
+                ->groupByRaw("COALESCE(NULLIF(toilet_connection, ''), 'Not Recorded')")
+                ->orderByDesc('count')
+                ->get();
+
+            $topSchoolsByStudents = (clone $activeSchools)
+                ->select('custom_school_id', 'name', 'ward_no', 'total_students', 'toilet_connection', 'main_drinking_water_source')
+                ->orderByDesc('total_students')
+                ->limit(8)
+                ->get();
+
+            $coverageSummary = [
+                'wards_covered' => $wardStats->whereNotNull('ward_no')->count(),
+                'avg_students_per_school' => $totalSchools ? round(($enrollmentSummary->total_students ?? 0) / $totalSchools, 1) : 0,
+                'student_teacher_ratio' => ($enrollmentSummary->teachers_total ?? 0)
+                    ? round(($enrollmentSummary->total_students ?? 0) / $enrollmentSummary->teachers_total, 1)
+                    : 0,
+                'soap_water_coverage' => $totalSchools
+                    ? round((($sanitationSummary->soap_water_available_schools ?? 0) / $totalSchools) * 100, 1)
+                    : 0,
+            ];
+
             return view('dashboard.educationDashboard', compact(
                 'schoolTypeCount',
                 'totalSchools',
@@ -191,7 +256,15 @@ class EducationController extends Controller
                 'basic1to5',
                 'basic6to8',
                 'scondary9to10',
-                'scondary9to12'
+                'scondary9to12',
+                'enrollmentSummary',
+                'sanitationSummary',
+                'schoolTypeRows',
+                'wardStats',
+                'waterSourceStats',
+                'toiletConnectionStats',
+                'topSchoolsByStudents',
+                'coverageSummary'
             ));
 }
 
