@@ -29,6 +29,9 @@ class MunicipalityBuildingPermitDepartmentSeeder extends Seeder
 
                     // Buildings page permissions (all except history)
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Building Structures'])->whereNotIn('type',['History']));
+
+                    // Building API
+                    $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Building Data Update API', 'Containment Data Update API'])->whereIn('type',['Access']));
                     
                     // Building Survey page permissions (all)
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Building Surveys']));

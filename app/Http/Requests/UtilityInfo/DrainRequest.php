@@ -42,6 +42,28 @@ class DrainRequest extends Request
      */
     public function rules()
     {
+        if ($this->is('api/*')) {
+            if ($this->isMethod('POST')) {
+                return [
+                    'road_code' => 'required|string',
+                    'cover_type' => 'nullable',
+                    'surface_type' => 'nullable',
+                    'size' => 'required|numeric',
+                    'length' => 'required|numeric',
+                    'treatment_plant_id' => 'nullable',
+                    'geom' => 'nullable',
+                ];
+            }
+            return [
+                'cover_type' => 'nullable',
+                'surface_type' => 'nullable',
+                'size' => 'sometimes|numeric',
+                'length' => 'sometimes|numeric',
+                'treatment_plant_id' => 'nullable',
+                'geom' => 'nullable',
+            ];
+        }
+
         switch ($this->method()) {
             case 'GET':
             case 'DELETE':

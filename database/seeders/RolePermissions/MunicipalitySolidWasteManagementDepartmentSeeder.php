@@ -27,6 +27,10 @@ class MunicipalitySolidWasteManagementDepartmentSeeder extends Seeder
                 case 'Municipality - Solid Waste Management Department':
 
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group', ['Swm Service Payment']));
+                     $createdRole->givePermissionTo(
+                        Permission::all()
+                            ->whereIn('group', ['Solid Waste Payment Data Update API'])
+                            ->whereIn('type',['Access']));
 
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group', ['Maps'])
                         ->whereIn('name', [

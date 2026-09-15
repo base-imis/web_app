@@ -37,7 +37,49 @@ class ContainmentRequest extends FormRequest
     }
     public function rules()
     {
+        if ($this->is('api/*')) {
+            return $this->apiRules();
+        }
+
         $rules = ($this->isMethod('POST') ? $this->store() : $this->update());
+        return $rules;
+    }
+
+    public function apiRules()
+    {
+        $flag = $this->route('flag') ?? $this->input('flag');
+        $type = $this->route('type') ?? $this->input('type');
+
+        $rules = [
+            'bin' => 'required',
+        ];
+
+        if ($flag === 'communal') {
+            $rules['ctpt_name'] = 'required|string';
+        }
+
+        if ($flag === 'shared') {
+            $rules['build_contain'] = 'required';
+        }
+
+        if ($flag === 'containment') {
+            $rules = array_merge($rules, [
+                'type_id' => 'required',
+                'size' => 'required|numeric|min:0',
+                'pit_diameter' => 'numeric|nullable|min:0',
+                'pit_depth' => 'numeric|nullable|min:0',
+                'depth' => 'numeric|nullable|min:0',
+                'tank_length' => 'numeric|nullable|min:0',
+                'tank_width' => 'numeric|nullable|min:0',
+                'sewer_code' => 'nullable|string',
+                'drain_code' => 'nullable|string',
+            ]);
+
+            if ($type === 'update') {
+                $rules['id'] = 'required';
+            }
+        }
+
         return $rules;
     }
     /**

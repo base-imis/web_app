@@ -4,6 +4,8 @@ namespace App\Http\Requests\BuildingInfo;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Validator, Input, Redirect;
+use Illuminate\Validation\Rule;
+use Illuminate\Http\Exceptions\HttpResponseException;
 class BuildingRequest extends FormRequest
 {
     /**
@@ -107,14 +109,32 @@ class BuildingRequest extends FormRequest
             // 'construction_date.required_if'=>'Containment Construction date  required.',
             'pit_shape.required_if' => __('Pit shape is required.'),
             'house_image.image' => __('The house image must be an image.'),
+            'drain_code.exists' => __('Invalid Drain Code. Please select a valid Drain Code.'),
 
         ];
     }
 
     public function rules()
     {
-        $rules = ($this->isMethod('POST') ? $this->store() : $this->update());
-        return $rules;
+        /*
+        * API update should use separate API validation rules.
+        *
+        * This supports:
+        * PUT /api/buildings/{bin}
+        * POST /api/buildings/{bin} with _method=PUT
+        */
+        if ($this->is('api/*')) {
+            $isApiUpdate =
+                $this->isMethod('PUT') ||
+                $this->isMethod('PATCH') ||
+                strtoupper((string) $this->input('_method')) === 'PUT' ||
+                $this->route('bin') ||
+                $this->route('building');
+
+            return $isApiUpdate ? $this->apiUpdate() : $this->store();
+        }
+
+        return $this->isMethod('POST') ? $this->store() : $this->update();
     }
 
     public function store()
@@ -193,14 +213,10 @@ class BuildingRequest extends FormRequest
             'ctpt_name' => 'exclude_if:toilet_status,1 | required_if:defecation_place,9',
             'household_with_private_toilet' => 'nullable |min:0 | lte:household_served',
             'population_with_private_toilet' =>'nullable|min:0| lte:population_served',
-           
-            // containment validation
-            // exclude if has been used to ensure cascading parent values are also checked below 
-            // child values are validated. E.g., dont validation type_id if toilet is no
+
             'type_id' => 'exclude_if:toilet_status,0 | required_if:sanitation_system_id,3,4',
             'size' =>  'exclude_if:toilet_status,0 | required_if:sanitation_system_id,3,4',
-            // exclude if has been used to ensure cascading parent values are also checked below 
-            // child values are validated. E.g., dont validation type_id if toilet is no
+
             'type_id' => 'exclude_if:toilet_status,0 | required_if:sanitation_system_id,3,4',
             'size' =>  'exclude_if:toilet_status,0 | required_if:sanitation_system_id,3,4',
             'depth' => 'numeric|nullable|min:0',
@@ -211,7 +227,15 @@ class BuildingRequest extends FormRequest
             'build_contain' => 'exclude_if:toilet_status,0 | required_if:sanitation_system_id,11',
             //drain and sewer code
             'sewer_code' => 'exclude_if:toilet_status,0 |exclude_if:type_id,2,14 | required_if:sanitation_system_id,1| required_if:type_id,1,13',
-            'drain_code' => 'exclude_if:toilet_status,0 |exclude_if:type_id,1,13 |  required_if:sanitation_system_id,2 | required_if:type_id,2,14',
+           'drain_code' => [
+                'exclude_if:toilet_status,0',
+                'exclude_if:type_id,1,13',
+                'required_if:sanitation_system_id,2',
+                'required_if:type_id,2,14',
+                'nullable',
+                'string',
+                Rule::exists('pgsql.utility_info.drains', 'code'),
+            ],
             'geom' => 'required_if:kml,null|file_extension:kml|max:1024',
             'house_image' => 'nullable|image|mimes:jpeg,jpg|max:5120', // 5MB = 5120KB
 
@@ -268,7 +292,7 @@ class BuildingRequest extends FormRequest
             'diff_abled_others_pop' => 'nullable|integer|min:0|exclude_if:diff_abled_others_pop,0|lte:other_population',
             //Lic Information
             'low_income_hh' => 'required',
-            'lic_id' => 'required_if:lic_status,1',
+            'lic_id' => 'required_if:lic_status,1', 
             //water source Information
             'water_source_id' => 'required',
             //Lic Information
@@ -281,7 +305,7 @@ class BuildingRequest extends FormRequest
             //sanitation system Information
             'toilet_status' => ['required',
             function ($attribute, $value, $fail) use ($use_cat) {
-               if (($use_cat == 34 && $value != true) || ($use_cat == 35 && $value != true) ) {
+               if (($use_cat == 34 && $value != true) || ($use_cat == 35 && $value != true) ) { 
                    $fail(__("The Toilet Presence must be Yes when Use Category is Public Toilet or Community Toilet"));
                }
            }
@@ -301,4 +325,202 @@ class BuildingRequest extends FormRequest
             'geom' => 'nullable|file_extension:kml|max:1024',
         ];
     }
+
+   public function apiUpdate()
+{
+    Validator::extend('file_extension', function ($attribute, $value, $parameters, $validator) {
+        if (!$value) {
+            return true;
+        }
+
+        return in_array(
+            strtolower($value->getClientOriginalExtension()),
+            array_map('strtolower', $parameters)
+        );
+    }, 'File must be kml format');
+
+    $bin = $this->route('bin')
+        ?? $this->route('building')
+        ?? $this->input('building')
+        ?? $this->input('bin');
+
+    $use_cat = $this->input('use_category_id');
+
+    return [
+        // Owner Information
+        'owner_name' => 'required',
+        'owner_contact' => 'required|integer|min:0',
+        'owner_gender' => 'required',
+
+        // Building Information
+        'main_building' => 'required',
+        'building_associated_to' => 'required_if:main_building,0',
+
+        'ward' => 'required',
+        'road_code' => 'required',
+        'house_number' => [
+            'nullable',
+            Rule::unique('pgsql.building_info.buildings', 'house_number')->ignore($bin, 'bin'),
+        ],
+        'house_locality' => 'nullable',
+        'tax_code' => 'required',
+        'structure_type_id' => 'required',
+
+        'construction_year' => 'required|date|before_or_equal:today',
+        'floor_count' => 'required|numeric|min:0.1',
+
+        'functional_use_id' => 'required',
+        'use_category_id' => 'required_with:functional_use_id',
+
+        // Population Information
+        'household_served' => [
+            'required_unless:use_category_id,34,35',
+            'nullable',
+            'integer',
+            'min:0',
+        ],
+
+        'population_served' => [
+            'required_unless:use_category_id,34,35',
+            'nullable',
+            'integer',
+            'min:0',
+        ],
+
+        'male_population' => 'nullable|integer|min:0',
+        'female_population' => 'nullable|integer|min:0',
+        'other_population' => 'nullable|integer|min:0',
+
+        'diff_abled_male_pop' => 'nullable|integer|min:0|exclude_if:diff_abled_male_pop,0|lte:male_population',
+        'diff_abled_female_pop' => 'nullable|integer|min:0|exclude_if:diff_abled_female_pop,0|lte:female_population',
+        'diff_abled_others_pop' => 'nullable|integer|min:0|exclude_if:diff_abled_others_pop,0|lte:other_population',
+
+        // LIC Information
+        'low_income_hh' => 'required',
+        'lic_status' => 'nullable',
+        'lic_id' => 'required_if:lic_status,1',
+
+        // Water Source Information
+        'water_source_id' => 'required',
+        'watersupply_pipe_code' => 'required_if:water_source_id,1',
+
+        // Sanitation System Information
+        'toilet_status' => [
+            'required',
+            function ($attribute, $value, $fail) use ($use_cat) {
+                if (($use_cat == 34 && $value != true) || ($use_cat == 35 && $value != true)) {
+                    $fail("The Toilet Presence must be Yes when Use Category is Public Toilet or Community Toilet");
+                }
+            },
+        ],
+
+        'toilet_count' => [
+            'exclude_if:toilet_status,0',
+            'required_if:toilet_status,1',
+            'integer',
+            'min:1',
+        ],
+
+        'sanitation_system_id' => [
+            'exclude_if:toilet_status,0',
+            'required_if:toilet_status,1',
+        ],
+
+        'defecation_place' => [
+            'exclude_if:toilet_status,1',
+            'required_if:toilet_status,0',
+        ],
+
+        'ctpt_name' => [
+            'exclude_if:toilet_status,1',
+            'required_if:defecation_place,9',
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'household_with_private_toilet' => [
+            'nullable',
+            'integer',
+            'min:0',
+            'lte:household_served',
+        ],
+
+        'population_with_private_toilet' => [
+            'nullable',
+            'integer',
+            'min:0',
+            'lte:population_served',
+        ],
+
+        // Containment validation
+        'type_id' => [
+            'exclude_if:toilet_status,0',
+            Rule::requiredIf(function () {
+                return in_array((string) $this->input('sanitation_system_id'), ['3', '4'], true);
+            }),
+            'nullable',
+        ],
+
+        'size' => [
+            'exclude_if:toilet_status,0',
+            Rule::requiredIf(function () {
+                return in_array((string) $this->input('sanitation_system_id'), ['3', '4'], true);
+            }),
+            'nullable',
+            'numeric',
+            'min:0',
+        ],
+
+        'depth' => 'nullable|numeric|min:0',
+        'tank_length' => 'nullable|numeric|min:0',
+        'tank_width' => 'nullable|numeric|min:0',
+        'pit_depth' => 'nullable|numeric|min:0',
+        'pit_diameter' => 'nullable|numeric|min:0',
+
+        'build_contain' => [
+            'exclude_if:toilet_status,0',
+            Rule::requiredIf(function () {
+                return (string) $this->input('sanitation_system_id') === '11';
+            }),
+            'nullable',
+        ],
+
+        // Fixed sewer_code: exclude if toilet_status=0 OR type_id=2,14; required if sanitation=1 AND type=1,13
+        'sewer_code' => [
+            'exclude_if:toilet_status,0',
+            'exclude_if:type_id,2,14',
+            Rule::requiredIf(function () {
+                return (string) $this->input('sanitation_system_id') === '1'
+                    && in_array((string) $this->input('type_id'), ['1', '13'], true);
+            }),
+            'nullable',
+            'string',
+        ],
+
+        // Fixed drain_code: exclude if toilet_status=0 OR type_id=1,13; required if sanitation=2 AND type=2,14
+        'drain_code' => [
+            'exclude_if:toilet_status,0',
+            'exclude_if:type_id,1,13',
+            Rule::requiredIf(function () {
+                return (string) $this->input('sanitation_system_id') === '2'
+                    && in_array((string) $this->input('type_id'), ['2', '14'], true);
+            }),
+            Rule::exists('utility_info.drains', 'drain_code'),
+            'nullable',
+            'string',
+        ],
+
+        // KML / geometry
+        'kml' => 'nullable',
+
+        'geom' => [
+            'nullable',
+            'file_extension:kml',
+            'max:1024',
+        ],
+
+        'house_image' => 'nullable|image|mimes:jpeg,jpg|max:5120',
+    ];
+}
 }

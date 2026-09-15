@@ -1742,9 +1742,118 @@ class PermissionsSeeder extends Seeder
                     ]
                 ]
             ]
-        ];
-
-
+            [
+                "group" => "NSD",
+                "perms" => [
+                    [
+                       "type" => "Push",
+                       "name" => "Push CWIS Indicator to NSD"
+                    ],
+                    [
+                        "type" => "Show",
+                        "name" => "Check Status of Indicator in NSD"
+                    ]
+                ]
+            ],
+            [
+                "group" => "NSD Setting",
+                "perms" => [
+                    [
+                        "type" => "List",
+                        "name" => "LisT NSD Setting"
+                    ],
+                    [
+                        "type" => "Save",
+                        "name" => "Save NSD Setting"
+                    ],
+                    [
+                        "type" => "Edit",
+                        "name" => "Edit NSD Setting"
+                    ]
+                ]
+            ],
+            [
+                "group" => "Building Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Building Data Update API"
+                    ],
+                ]
+            ],
+            [
+            "group" => "Containment Data Update API",
+            "perms" => [
+                [
+                    "type" => "Access",
+                    "name" => "Access Containment Data Update API"
+                ],
+            ]
+            ],
+            [
+                "group" => "Road Connection Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Road Connection Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Water Supply Connection Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Water Supply Connection Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Sewer Connection Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Sewer Connection Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Drain Connection Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Drain Connection Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Tax Payment Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Tax Payment Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Water Payment Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Water Payment Data Update API"
+                    ],
+                ]
+            ],
+            [
+                "group" => "Solid Waste Payment Data Update API",
+                "perms" => [
+                    [
+                        "type" => "Access",
+                        "name" => "Access Solid Waste Payment Data Update API"
+                    ],
+                ]
+            ],
+            ];
 
         foreach ($grouped_permissions as $group) {
             foreach ($group['perms'] as $permission){

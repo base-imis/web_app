@@ -42,6 +42,26 @@ class SewerLineRequest extends Request
      */
     public function rules()
     {
+        if ($this->is('api/*')) {
+            if ($this->isMethod('POST')) {
+                return [
+                    'road_code' => 'required|string',
+                    'location' => 'required|string',
+                    'length' => 'required|numeric',
+                    'diameter' => 'required|numeric',
+                    'treatment_plant_id' => 'nullable',
+                    'geom' => 'nullable',
+                ];
+            }
+            return [
+                'location' => 'sometimes|string',
+                'length' => 'sometimes|numeric',
+                'diameter' => 'sometimes|numeric',
+                'treatment_plant_id' => 'nullable',
+                'geom' => 'nullable',
+            ];
+        }
+
         switch ($this->method()) {
             case 'GET':
             case 'DELETE':

@@ -1111,6 +1111,26 @@ This table stores the value that is input from the editable form and is used as 
 | 5  | fs_generation_from_containment_not_connected_to_sewer_lpcd | 270   | cwis_setting |
 | 6  | fs_generation_from_permeable_or_unlined_pit_lpcd           | 280   | cwis_setting |
 
+## NSD Setting
+
+Schema Name: **cwis**
+
+Table name: **nsd-setting**
+
+This table stores the credentials and API endpoint URLs required for integration with the National Sanitation Dashboard (NSD).
+
+| **Field Name** | **Description**                                                | **Data type**               |
+| -------------- | -------------------------------------------------------------- | --------------------------- |
+| id             | Unique identifier for the record (auto generated)              | bigint pk                   |
+| nsd_username   | Username for NSD API authentication                            | character varying (256)     |
+| city           | Name of the municipality / city                                 | character varying (256)     |
+| api_post_url   | API endpoint URL to post CWIS indicator data to NSD            | text                        |
+| api_login_url  | API endpoint URL to authenticate with NSD                      | text                        |
+| nsd_password   | Password for NSD API authentication                            | character varying (256)     |
+| created_at     | Timestamp when the record was created (Auto Fill, Hidden)      | timestamp without time zone |
+| updated_at     | Timestamp when the record was last updated (Auto Fill, Hidden) | timestamp without time zone |
+| deleted_at     | Timestamp when the record was deleted (Auto Fill, Hidden)      | timestamp without time zone |
+
 ## KPI Target
 
 Schema Name: **fsm**

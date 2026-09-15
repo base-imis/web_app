@@ -26,6 +26,11 @@ class MunicipalityTaxDepartmentSeeder extends Seeder
 
                     
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Property Tax Collection ISS']));
+                    $createdRole->givePermissionTo(
+                        Permission::all()
+                            ->whereIn('group', ['Tax Payment Data Update API'])
+                            ->whereIn('type',['Access']));
+
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Maps'])
                     ->whereIN('name',[
                         'Municipality Map Layer',

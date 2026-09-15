@@ -43,6 +43,29 @@ class RoadLineRequest extends FormRequest
      */
     public function rules()
     {
+        if ($this->is('api/*')) {
+            if ($this->isMethod('POST')) {
+                return [
+                    'name' => 'required|max:255',
+                    'length' => 'required|numeric',
+                    'carrying_width' => 'required|numeric',
+                    'hierarchy' => 'nullable',
+                    'surface_type' => 'nullable',
+                    'right_of_way' => 'required|numeric',
+                    'geom' => 'nullable',
+                ];
+            }
+            return [
+                'name' => 'sometimes|max:255',
+                'length' => 'sometimes|numeric',
+                'carrying_width' => 'sometimes|numeric',
+                'hierarchy' => 'nullable',
+                'surface_type' => 'nullable',
+                'right_of_way' => 'sometimes|numeric',
+                'geom' => 'nullable',
+            ];
+        }
+
         $rules = [];
 
         switch ($this->method()) {

@@ -29,6 +29,11 @@ class MunicipalityInfrastructureDepartmentSeeder extends Seeder
                         Permission::all()
                             ->whereIn('group', ['PT/CT Toilets'])
                             ->whereIn('type',['View','List','Export','View on map']));
+                       $createdRole->givePermissionTo(
+                        Permission::all()
+                            ->whereIn('group', ['Road Connection Data Update API', 'Water Supply Connection Data Update API', 'Sewer Connection Data Update API', 'Drain Connection Data Update API'])
+                            ->whereIn('type',['Access']));
+
                     $createdRole->givePermissionTo(
                         Permission::all()
                             ->whereIn('group', ['Building Structures', 'Building Surveys', 'Low Income Communities', 'Containments'])

@@ -8,7 +8,14 @@ use App\Http\Controllers\Api\EmptyingServiceController;
 use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\BuildingInfo\BuildingController;
 use App\Http\Controllers\BuildingSearchController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\BuildingApiController;
+use App\Http\Controllers\Api\RoadApiController;
+use App\Http\Controllers\Api\DrainApiController;
+use App\Http\Controllers\Api\WaterSupplyApiController;
+use App\Http\Controllers\Api\SewerApiController;
+use App\Http\Controllers\Api\SwmPaymentApiController;
+use App\Http\Controllers\Api\TaxPaymentApiController;
+use App\Http\Controllers\Api\WaterSupplyPaymentApiController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -22,6 +29,11 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+    Route::get('/test-xss', function () {
+    return response()->json([
+        'message' => '<script>alert("XSS Attack!")</script>'
+    ]);
+})->middleware('security.headers');
 
 /*
 |
@@ -147,4 +159,104 @@ Route::group([
 
         });
 
+   // Write endpoints — force JSON on validation/auth/throttle failures
+    Route::middleware([
+        'auth:sanctum',
+        'force.json',
+        'security.headers',
+        'permission:Access Building Data API',
+        'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeBuilding', [BuildingApiController::class, 'store']);
+        Route::post('/storeBuildings', [BuildingApiController::class, 'store']);
+        Route::put('/updateBuilding/{bin}', [BuildingApiController::class, 'update']);
+    });
+
+    
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Road Connection Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeRoad', [RoadApiController::class, 'store']);
+        Route::put('/updateRoad/{code}', [RoadApiController::class, 'update']);
+        Route::get('/roads/export', [RoadApiController::class, 'export']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Drain Connection Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeDrain', [DrainApiController::class, 'store']);
+        Route::put('/updateDrain/{code}', [DrainApiController::class, 'update']);
+        Route::get('/drains/export', [DrainApiController::class, 'export']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Water Supply Connection Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeWaterSupply', [WaterSupplyApiController::class, 'store']);
+        Route::put('/updateWaterSupply/{code}', [WaterSupplyApiController::class, 'update']);
+        Route::get('/waterSupplies/export', [WaterSupplyApiController::class, 'export']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Sewer Connection Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeSewer', [SewerApiController::class, 'store']);
+        Route::put('/updateSewer/{code}', [SewerApiController::class, 'update']);
+        Route::get('/sewers/export', [SewerApiController::class, 'export']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Tax Payment Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeTaxPayment', [TaxPaymentApiController::class, 'store']);
+        Route::get('/taxPayments/export', [TaxPaymentApiController::class, 'export']);
+        Route::get('/taxPayments/exportunmatched', [TaxPaymentApiController::class, 'exportunmatched']);
+        Route::put('/taxPayments/update/{tax_code}', [TaxPaymentApiController::class, 'update']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Water Payment Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeWaterSupplyPayment', [WaterSupplyPaymentApiController::class, 'store']);
+        Route::get('/waterSupplyPayments/export', [WaterSupplyPaymentApiController::class, 'export']);
+        Route::get('/waterSupplyPayments/exportunmatched', [WaterSupplyPaymentApiController::class, 'exportunmatched']);
+        Route::put('/waterSupplyPayments/update/{water_customer_id}', [WaterSupplyPaymentApiController::class, 'update']);
+    });
+
+    Route::middleware([
+    'force.json',
+    'auth:sanctum',
+    'security.headers',
+    'permission:Access Solid Waste Payment Data Update API',
+    'throttle:building-write',
+    ])->group(function () {
+        Route::post('/storeSwmPayment', [SwmPaymentApiController::class, 'store']);
+        Route::get('/swmPayments/export', [SwmPaymentApiController::class, 'export']);
+        Route::get('/swmPayments/exportunmatched', [SwmPaymentApiController::class, 'exportunmatched']);
+        Route::put('/swmPayments/update/{swm_customer_id}', [SwmPaymentApiController::class, 'update']);
+    });
 });

@@ -44,6 +44,28 @@ class WaterSupplysRequest extends Request
      */
        public function rules()
     {
+        if ($this->is('api/*')) {
+            if ($this->isMethod('POST')) {
+                return [
+                    'road_code' => 'required',
+                    'project_name' => 'required|string',
+                    'type' => 'nullable|string',
+                    'material_type' => 'nullable|string',
+                    'diameter' => 'required|numeric',
+                    'length' => 'required|numeric',
+                    'geom' => 'nullable',
+                ];
+            }
+            return [
+                'project_name' => 'sometimes|string',
+                'type' => 'nullable|string',
+                'material_type' => 'nullable|string',
+                'diameter' => 'sometimes|numeric',
+                'length' => 'sometimes|numeric',
+                'geom' => 'nullable',
+            ];
+        }
+
         switch ($this->method()) {
             case 'GET':
             case 'DELETE':

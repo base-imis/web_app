@@ -26,6 +26,11 @@ class MunicipalityWaterBillingUnitSeeder extends Seeder
 
                     
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Water Supply ISS']));
+                     $createdRole->givePermissionTo(
+                        Permission::all()
+                            ->whereIn('group', ['Water Payment Data Update API'])
+                            ->whereIn('type',['Access']));
+
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Maps'])
                     ->whereIN('name',['Roads Map Layer','Sewers Line Map Layer','Drains Map Layer','WaterSupply Network Map Layer','Places Map Layer', 'Buildings Map Layer','Water Payment Status Map Layer','Wards Map Layer', 'Summarized Grids Map Layer', 'Water Body Map Layer', 'Land Use Map Layer',
                     'General Map Tools','Water Payment Status Map Tools','Data Export Map Tools','Export Data Map Tools','Owner Information Map Tools','Decision Map Tools','Summary Information Buffer Map Tools','Summary Information Water Bodies Map Tools','Summary Information Wards Map Tools','Summary Information Road Map Tools','Summary Information Point Map Tools','Export in General Map Tools','Export in Decision Map Tools','Export in Summary Information Map Tools',
