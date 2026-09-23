@@ -2,7 +2,7 @@
 // Last Modified Date: 07-04-2024
 // Developed By: Innovative Solution Pvt. Ltd. (ISPL)  
 
-namespace App\Http\Controllers\Fsm;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Fsm\Emptying;
@@ -110,15 +110,15 @@ class SludgeCollectionController extends Controller
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['sludge-collection.destroy', $model->id]]);
 
                 if (Auth::user()->can('View Sludge Collection')) {
-                    $content .= '<a title="' . __("Detail") . '" href="' . action("Fsm\SludgeCollectionController@show", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . action("Fsm\SludgeCollectionController@show", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Sludge Collection History')) {
-                    $content .= '<a title="' . __("History") . '" href="' . action("Fsm\SludgeCollectionController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . action("Fsm\SludgeCollectionController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
 
                 if (Auth::user()->can('Delete Sludge Collection')) {
-                    $content .= '<a title="' . __("Delete") . '"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a title="' . e(__("Delete")) . '"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
 
                 $content .= \Form::close();
@@ -144,6 +144,266 @@ class SludgeCollectionController extends Controller
             })
             ->make(true);
     }
+
+    public function getAssessedSludgeApplications()
+{
+    try {
+        $user = Auth::user();
+
+        $latestEmptyingSub = DB::table('fsm.emptyings as e')
+            ->selectRaw('DISTINCT ON (e.application_id) e.*')
+            ->orderBy('e.application_id')
+            ->orderByDesc('e.id');
+
+        $latestSludgeSub = DB::table('fsm.sludge_collections as s')
+            ->selectRaw('DISTINCT ON (s.application_id) s.*')
+            ->orderBy('s.application_id')
+            ->orderByDesc('s.id');
+
+        $query = Application::query()
+            
+        
+            ->select([
+                'applications.id as application_id',
+                'applications.bin',
+                'applications.ward',
+                'buildings.house_number as house_number',
+
+                'service_providers.contact_number as service_provider_contact',
+
+                'emptyings.emptied_date',
+                'emptyings.volume_of_sludge',
+                'emptyings.trip_no as emptying_trip_no',
+
+                'sludges.trip_no as sludge_trip_no',
+
+                'desludging_vehicles.license_plate_number as vehicle_license_plate_number',
+
+                DB::raw('public.ST_AsGeoJSON(buildings.geom) AS geometry_raw'),
+            ])
+            ->join('building_info.buildings as buildings', function ($join) {
+                $join->on(DB::raw('applications.bin::text'), '=', DB::raw('buildings.bin::text'));
+            })
+            ->leftJoinSub($latestEmptyingSub, 'emptyings', function ($join) {
+                $join->on('emptyings.application_id', '=', 'applications.id');
+            })
+            ->leftJoinSub($latestSludgeSub, 'sludges', function ($join) {
+                $join->on('sludges.application_id', '=', 'applications.id');
+            })
+            ->leftJoin('fsm.desludging_vehicles as desludging_vehicles', 'emptyings.desludging_vehicle_id', '=', 'desludging_vehicles.id')
+            ->leftJoin('fsm.service_providers as service_providers', 'applications.service_provider_id', '=', 'service_providers.id')
+            ->whereNull('applications.deleted_at')
+            ->whereIn('applications.emptying_status', [1, 2])
+            ->whereNotNull('emptyings.id')
+            ->where(function ($q) {
+                $q->where('applications.sludge_collection_status', 0) // first add
+                  ->orWhere(function ($q2) { // next add
+                      $q2->where('applications.sludge_collection_status', 1)
+                         ->whereRaw('COALESCE(emptyings.trip_no, 0) <> COALESCE(sludges.trip_no, 0)');
+                  });
+            });
+
+        if ($user->hasRole('Service Provider - Emptying Operator')) {
+            $query->where('applications.service_provider_id', $user->service_provider_id);
+        }
+
+        $applications = $query->get()->map(function ($app) {
+            $app->geometry = $app->geometry_raw ? json_decode($app->geometry_raw) : null;
+            unset($app->geometry_raw);
+
+            $app->image_status = Storage::disk('public')->exists("emptyings/houses/{$app->bin}.jpg");
+
+            // frontend helpers
+            $app->can_add_sludge_collection =
+                ($app->sludge_trip_no === null) || ((int)$app->emptying_trip_no !== (int)$app->sludge_trip_no);
+
+            return $app;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => ['applications' => $applications],
+            'message' => __('Applications retrieved successfully.'),
+        ]);
+
+    } catch (\Throwable $th) {
+        return response()->json([
+            'status' => false,
+            'message' => $th->getMessage(),
+        ], 500);
+    }
+}
+
+  public function getSludgeDisposalFormFields(Request $request, $application_id)
+{
+    // ✅ Get application info
+    $application = Application::find($application_id);
+
+    // initialise to avoid undefined variable notices
+    $treatment_plant_id  = null;
+    $service_provider_id = null;
+    $vacutug_id          = null;
+    $volume_of_sludge    = null;
+
+    $emptying = Emptying::where('application_id', $application_id)
+        ->latest()
+        ->first();
+
+    if ($emptying) {
+        $treatment_plant_id  = $emptying->treatment_plant_id ?? null;
+        $service_provider_id = $application->service_provider_id ?? null;
+        $vacutug_id          = $emptying->desludging_vehicle_id ?? null;
+        $volume_of_sludge    = $emptying->volume_of_sludge ?? null;
+    }
+
+    // Get treatment plants list (same logic as web)
+    if (Auth::user()->hasRole('Treatment Plant - Admin')) {
+        $treatmentPlants = TreatmentPlant::Operational()
+            ->where('id', Auth::user()->treatment_plant_id)
+            ->orderBy('id')
+            ->pluck('name', 'id')
+            ->toArray();
+    } else {
+        $treatmentPlants = TreatmentPlant::Operational()
+            ->orderBy('id')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    // 💡 Build options: if we have a specific plant id, send only that one
+    if (!empty($treatment_plant_id)) {
+        $options = [
+            [
+                'value' => $treatment_plant_id,
+                'label' => $treatmentPlants[$treatment_plant_id] ?? '',
+            ],
+        ];
+        $selectedPlantId = $treatment_plant_id;
+    } else {
+        $options = collect($treatmentPlants)->map(function ($name, $id) {
+            return [
+                'value' => $id,
+                'label' => $name,
+            ];
+        })->values()->all();
+
+        $selectedPlantId = null;
+    }
+
+   
+
+    return [
+          // 🏭 Treatment Plant Name - Prefilled (select, 1 option if prefilled)
+        [
+            'label'       => __('Treatment Plant Name'),
+            'name'        => 'treatment_plant_id',
+            'input_type'  => 'select',
+            'disabled'    => !empty($treatment_plant_id), // disabled when prefilled
+            'prefilled'   => true,
+            'required'    => true,
+            'validation'  => 'required|integer|exists:treatment_plants,id',
+            'placeholder' => __('--- Choose treatment plant ---'),
+            'options'     => $options,           // 👈 1 option or full list
+            'value'       => $selectedPlantId,   // 👈 1 (for example)
+        ],
+        // 🆔 Application ID - Prefilled
+        [
+            'label'       => __('Application ID'),
+            'name'        => 'application_id',
+            'input_type'  => 'text',
+            'disabled'    => true,
+            'prefilled'   => true,
+            'required'    => true,
+            'validation'  => 'required|integer|exists:applications,id',
+            'placeholder' => __('Application ID'),
+            'value'       => $application_id,
+        ],
+
+      
+
+        // 💧 Sludge Volume - Prefilled
+        [
+            'label'       => __('Sludge Volume (m³)'),
+            'name'        => 'sludge_volume',
+            'input_type'  => 'number',
+            'disabled'    => true,
+            'prefilled'   => true,
+            'required'    => true,
+            'validation'  => 'required|numeric|gt:0',
+            'placeholder' => __('Sludge Volume (m³)'),
+            'value'       => $volume_of_sludge,
+        ],
+
+        // 📅 Date Picker - No future dates allowed
+        [
+            'label'       => __('Date'),
+            'name'        => 'date',
+            'input_type'  => 'date',
+            'required'    => true,
+            'validation'  => 'required|date|after_or_equal:today',
+            'placeholder' => __('Select Date'),
+        ],
+
+        [
+            'label'      => __('Desludging Vehicle Size'),
+            'name'       => 'desludging_vehicle_id',
+            'input_type' => 'hidden',
+            'disabled'   => true,
+            'required'   => false,
+            'value'      => $vacutug_id,
+        ],
+
+        [
+            'label'      => __('Service Provider'),
+            'name'       => 'service_provider_id',
+            'input_type' => 'hidden',
+            'disabled'   => true,
+            'required'   => false,
+            'value'      => $service_provider_id,
+        ],
+
+        // ⏱ Entry Time
+        [
+            'label'       => __('Entry Time'),
+            'name'        => 'entry_time',
+            'input_type'  => 'time',
+            'required'    => true,
+            'validation'  => 'required|date_format:H:i',
+            'placeholder' => __('Entry Time'),
+        ],
+
+        // ⏳ Exit Time
+        [
+            'label'       => __('Exit Time'),
+            'name'        => 'exit_time',
+            'input_type'  => 'time',
+            'required'    => true,
+            'validation'  => 'required|date_format:H:i|after:entry_time',
+            'placeholder' => __('Exit Time'),
+        ],
+
+        // 🧾 Tipping Fee Receipt No. (Optional input)
+        [
+            'label'       => __( 'Tipping Fee Receipt No.'),
+            'name'        => 'tipping_fee_receipt_no',
+            'input_type'  => 'text',
+            'required'    => true,
+            'validation'  => 'nullable|string|max:255',
+            'placeholder' => __('Tipping Fee Receipt Number'),
+        ],
+
+        // 💰 Tipping Fee Amount - Auto fetched (Read only)
+        [
+            'label'       => __('Tipping Fee Amount'),
+            'name'        => 'tipping_fee_amount',
+            'input_type'  => 'number',
+            'required'    => true,
+            'validation'  => 'required|numeric|min:0',
+            'placeholder' => __('Tipping Fee Amount')
+            
+        ],
+    ];
+}
 
 
     /**
@@ -226,8 +486,8 @@ class SludgeCollectionController extends Controller
             $appId = $sludgeCollectionLog->application_id;
 
             $sludgeCollection = SludgeCollection::where('application_id', $appId)->first();
-
-            if ($sludgeCollection) {
+sfasdasdasdasdasdasfasasdsadasd   
+            if ($sludgeCollection) {            sfasdasdasdasdasdasfasasdsadasd   
                 // Update existing
                 $sludgeCollection->volume_of_sludge =
                     $sludgeCollection->volume_of_sludge + $request->volume_of_sludge;
@@ -265,15 +525,16 @@ class SludgeCollectionController extends Controller
             // -------------------------
             $application = Application::where('id', $appId)->first();
             if ($application) {
-                $application->sludge_collection_status = true;
+                if ($sludgeCollection->trip_no == $application->trip_count) {
+                    $application->sludge_collection_status = 2; // completed
+                } else {
+                    $application->sludge_collection_status = 1; // in progress
+                }
                 $application->save();
             }
 
             DB::commit();
             DB::afterCommit(function () use ($application, $sludgeCollection) {
-                if (!$application || !$sludgeCollection) {
-                    return;
-                }
 
                 $etoUserIds = DB::table('fsm.employees')
     ->where('service_provider_id', $sludgeCollection->service_provider_id)
@@ -347,13 +608,6 @@ if (!empty($recipientIds)) {
 
         } catch (\Throwable $e) {
             DB::rollBack();
-
-            \Log::error('SludgeCollection create error: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
-            ]);
 
             if ($mode === 'api') {
                 return response()->json([
@@ -513,6 +767,7 @@ if (!empty($recipientIds)) {
         $sludgeCollectionLog->user_id = Auth::user()->id;
         $sludgeCollectionLog->tipping_fee_amount = $request->tipping_fee_amount ? $request->tipping_fee_amount : null;
         $sludgeCollectionLog->tipping_fee_receipt_no = $request->tipping_fee_receipt_no ? $request->tipping_fee_receipt_no : null;
+        $sludgeCollection->service_provider_id = $request->service_provider_id ? $request->service_provider_id : null;
 
         $sludgeCollectionLog->save();
 

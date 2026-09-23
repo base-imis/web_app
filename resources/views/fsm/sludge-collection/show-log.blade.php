@@ -36,13 +36,19 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 {!! Form::label('date_label', $date, ['class' => 'form-control']) !!}
                 </div>
             </div>
-            <div class="form-group row ">
-                {!! Form::label('total_time',__('Total Time'),['class' => 'col-sm-3 control-label']) !!}
+             <div class="form-group row ">
+                {!! Form::label('date',__('Entry Time'),['class' => 'col-sm-3 control-label']) !!}
                 <div class="col-sm-6">
-                    {!! Form::label(null,$sludgeCollection->total_time,['class' => 'form-control']) !!}
+                    {!! Form::label(null,$sludgeCollection->entry_time? date('h:i A', strtotime($sludgeCollection->entry_time)) : null,['class' => 'form-control']) !!}
                 </div>
             </div>
-            
+           
+            <div class="form-group row ">
+                {!! Form::label('date',__('Exit Time'),['class' => 'col-sm-3 control-label']) !!}
+                <div class="col-sm-6">
+                    {!! Form::label(null,$sludgeCollection->exit_time? date('h:i A', strtotime($sludgeCollection->exit_time)) : null,['class' => 'form-control']) !!}
+                </div>
+            </div>
             <div class="form-group row ">
                 {!! Form::label('tipping_fee_receipt_no',__('Tipping Fee Receipt No'),['class' => 'col-sm-3 control-label']) !!}
                 <div class="col-sm-6">
@@ -56,7 +62,6 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                     {!! Form::label(null,$sludgeCollection->tipping_fee_amount,['class' => 'form-control']) !!}
                 </div>
             </div>
-            
 
             <div class="form-group row">
                 {!! Form::label('vacutug_id', __('Desludging Vehicle Number Plate'),['class' => 'col-sm-3 control-label']) !!}
