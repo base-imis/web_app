@@ -149,6 +149,8 @@ trait CreatesDesludgingTestData
             'proposed_emptying_date' => now()->addDay()->toDateString(),
             'supervisory_assessment_date' => now()->toDateString(),
             'service_provider_id' => $provider->id,
+            'emergency_desludging_status' => false,
+            'desludging_vehicle_size' => 5,
         ];
     }
 }
