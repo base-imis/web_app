@@ -530,9 +530,9 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             </li>
             @endif
 
-            @if(Auth::user()->hasanyPermissionInGroup(['Data Export','Maps']) || Auth::user()->hasRole('Super Admin'))
-            <li class="nav-item  {{ request()->is('export-shp-kml', 'maps') ? 'menu-is-opening menu-open' : '' }}">
-                <a href="#" class="nav-link  {{ request()->is('export-shp-kml', 'maps') ? 'active' : '' }}">
+            @if(Auth::user()->hasanyPermissionInGroup(['Data Export','Maps','Places']) || Auth::user()->hasRole('Super Admin'))
+            <li class="nav-item  {{ request()->is('export-shp-kml', 'maps', 'places*') ? 'menu-is-opening menu-open' : '' }}">
+                <a href="#" class="nav-link  {{ request()->is('export-shp-kml', 'maps', 'places*') ? 'active' : '' }}">
                     <img src="{{ asset('img/svg/imis-icons/urbanManagementDSS.svg')}}" class="nav-icon" alt="Urban Management DSS">
                     <p>
                         {{__('Urban Management DSS')}} <i class="right fas fa-angle-left"></i>
@@ -554,6 +554,18 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             <p>{{__('Map Feature')}} </p>
                         </a>
                     </li>
+
+                    @can('List Places')
+                    <li class="nav-item" data-testid="nav-places">
+                        <a
+                            href="{{ route('places.index') }}"
+                            class="nav-link {{ request()->is('places*') ? 'active' : '' }}"
+                        >
+                            <i class="nav-icon far fa-circle nav-icon"></i>
+                            <p>{{ __('Places') }}</p>
+                        </a>
+                    </li>
+                    @endcan
                 </ul>
             </li>
             @endif
