@@ -6,6 +6,8 @@ namespace App\Models\Fsm;
 use App\Models\BuildingInfo\Building;
 use App\Models\UtilityInfo\Roadline;
 use App\Models\Fsm\TreatmentPlant;
+use App\Models\Fsm\SludgeCollection;
+use App\Models\Fsm\SludgeCollectionLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +28,17 @@ class Application extends Model
      * @var String
      */
     protected $table= 'fsm.applications';
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'sludge_collection_status' => 'boolean',
+        'emptying_status' => 'boolean',
+        'is_anf' => 'boolean',
+    ];
 
     /**
      * Enable revisions/history
@@ -75,6 +88,10 @@ class Application extends Model
         'service_provider_id',
         'emergency_desludging_status',
         'containment_id',
+        'trip_count',
+        'is_anf',
+        'anf_locality',
+        'anf_nearest_locality'
     ];
 
     /**
@@ -145,6 +162,11 @@ class Application extends Model
     public function sludge_collection()
     {
         return $this->hasOne(SludgeCollection::class, 'application_id', 'id');
+    }
+
+    public function sludge_collection_log()
+    {
+        return $this->hasMany(SludgeCollectionLog::class, 'application_id', 'id');
     }
 
 }
