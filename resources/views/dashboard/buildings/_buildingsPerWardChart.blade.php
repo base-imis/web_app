@@ -9,13 +9,13 @@ var ctx = document.getElementById("buildingsPerWardChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $buildingsPerWardChart['labels']); ?>],
+    labels: @json($buildingsPerWardChart['labels']),
     datasets: [
         {
             label: "No. of buildings",
             backgroundColor: "rgba(54, 162, 235,0.5)",
             hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-            data: [<?php echo implode(',', $buildingsPerWardChart['values']); ?>],
+            data: @json($buildingsPerWardChart['values']),
         }
     ]
 },

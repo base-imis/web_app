@@ -9,16 +9,16 @@ var ctx = document.getElementById("impactCreatingPublicAwareness");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: [<?php echo implode(',', $impactCreatingPublicAwareness['labels']); ?>],
+    labels: @json($impactCreatingPublicAwareness['labels']),
     datasets: [
         {
             label: "Impact In Creating Public Awareness",
-            backgroundColor: [<?php echo implode(',', $impactCreatingPublicAwareness['colors']); ?>],
-            borderColor: [<?php echo implode(',', $impactCreatingPublicAwareness['borderColor']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $impactCreatingPublicAwareness['hoverBackgroundColor']); ?>],
-            hoverBorderColor: [<?php echo implode(',', $impactCreatingPublicAwareness['hoverBorderColor']); ?>],
+            backgroundColor: @json($impactCreatingPublicAwareness['colors']),
+            borderColor: @json($impactCreatingPublicAwareness['borderColor']),
+            hoverBackgroundColor: @json($impactCreatingPublicAwareness['hoverBackgroundColor']),
+            hoverBorderColor: @json($impactCreatingPublicAwareness['hoverBorderColor']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $impactCreatingPublicAwareness['values']); ?>],
+            data: @json($impactCreatingPublicAwareness['values']),
         }
     ]
 },

@@ -60,23 +60,23 @@ class DrainService {
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['drains.destroy', $model->code]]);
 
                 if (Auth::user()->can('Edit Drain')) {
-                    $content .= '<a title="Edit" href="' . action("UtilityInfo\DrainController@edit", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
+                    $content .= '<a title="' . e(__("Edit")) . '" href="' . action("UtilityInfo\DrainController@edit", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Drain')) {
-                    $content .= '<a title="Detail" href="' . action("UtilityInfo\DrainController@show", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . action("UtilityInfo\DrainController@show", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Drain History')) {
-                    $content .= '<a title="History" href="' . action("UtilityInfo\DrainController@history", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . action("UtilityInfo\DrainController@history", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
 
                 if (Auth::user()->can('Delete Drain')) {
-                    $content .= '<a href="#" title="Delete"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a href="#" title="' . e(__("Delete")) . '"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Drain On Map')) {
-                    $content .= '<a title="Map" href="' . action("MapsController@index", ['layer' => 'drains_layer', 'field' => 'code', 'val' => $model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-map-marker"></i></a> ';
+                    $content .= '<a title="' . e(__("Map")) . '" href="' . action("MapsController@index", ['layer' => 'drains_layer', 'field' => 'code', 'val' => $model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-map-marker"></i></a> ';
                 }
 
                 $content .= \Form::close();

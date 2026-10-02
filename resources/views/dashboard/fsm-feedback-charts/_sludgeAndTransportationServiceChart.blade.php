@@ -9,14 +9,14 @@ var ctx = document.getElementById("sludgeAndTransportationServiceChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: [<?php echo implode(',', $sludgeAndTransportationServiceChart['labels']); ?>],
+    labels: @json($sludgeAndTransportationServiceChart['labels']),
     datasets: [
         {
             label: "Building Structures by building use",
-            backgroundColor: [<?php echo implode(',', $sludgeAndTransportationServiceChart['colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $sludgeAndTransportationServiceChart['colors']); ?>],
+            backgroundColor: @json($sludgeAndTransportationServiceChart['colors']),
+            hoverBackgroundColor: @json($sludgeAndTransportationServiceChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $sludgeAndTransportationServiceChart['values']); ?>],
+            data: @json($sludgeAndTransportationServiceChart['values']),
         }
     ]
 },

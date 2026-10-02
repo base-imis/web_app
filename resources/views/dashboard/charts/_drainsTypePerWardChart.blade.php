@@ -11,14 +11,14 @@ var ctx = document.getElementById("drainsTypePerWardChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $drainsTypePerWardChart['labels']); ?>],
+    labels: @json($drainsTypePerWardChart['labels']),
     datasets: [
         @foreach($drainsTypePerWardChart['datasets'] as $dataset)
         {
             label: <?php echo $dataset['label']; ?>,
             backgroundColor: <?php echo $dataset['color']; ?>,
-            data: [<?php echo implode(',', $dataset['data']); ?>],
-            values:[<?php echo implode(',', $dataset['value']); ?>]
+            data: @json($dataset['data']),
+            values: @json($dataset['value'])
         },
         @endforeach
     ]

@@ -9,14 +9,14 @@
     var myChart = new Chart(ctx, {
       type: 'horizontalBar',
       data: {
-        labels: [<?php echo implode(',', $containmentTypesByBldgUsesChart['labels']); ?>],
+        labels: @json($containmentTypesByBldgUsesChart['labels']),
         datasets: [
             @foreach($containmentTypesByBldgUsesChart['datasets'] as $dataset)
             {
                 label: <?php echo $dataset['label']; ?>,
                 backgroundColor: <?php echo $dataset['color']; ?>,
-                data: [<?php echo implode(',', $dataset['data']); ?>],
-                values:[<?php echo implode(',', $dataset['value']); ?>]
+                data: @json($dataset['data']),
+                values: @json($dataset['value'])
             },
             @endforeach
         ]

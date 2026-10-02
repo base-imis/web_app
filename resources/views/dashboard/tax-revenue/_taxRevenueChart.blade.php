@@ -9,14 +9,14 @@ var ctx = document.getElementById("taxRevenueChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $taxRevenueChart['labels']); ?>],
+    labels: @json($taxRevenueChart['labels']),
     datasets: [
         {
             label: "Payment Due",
-            backgroundColor: [<?php echo implode(',', $taxRevenueChart['background_colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $taxRevenueChart['colors']); ?>],
+            backgroundColor: @json($taxRevenueChart['background_colors']),
+            hoverBackgroundColor: @json($taxRevenueChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $taxRevenueChart['values']); ?>],
+            data: @json($taxRevenueChart['values']),
         }
     ]
 },

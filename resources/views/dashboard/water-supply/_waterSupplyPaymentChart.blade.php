@@ -9,14 +9,14 @@ var ctx = document.getElementById("waterSupplyPaymentChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $waterSupplyPaymentChart['labels']); ?>],
+    labels: @json($waterSupplyPaymentChart['labels']),
     datasets: [
         {
             label: "Payment Due",
-            backgroundColor: [<?php echo implode(',', $waterSupplyPaymentChart['background_colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $waterSupplyPaymentChart['colors']); ?>],
+            backgroundColor: @json($waterSupplyPaymentChart['background_colors']),
+            hoverBackgroundColor: @json($waterSupplyPaymentChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $waterSupplyPaymentChart['values']); ?>],
+            data: @json($waterSupplyPaymentChart['values']),
         }
     ]
 },

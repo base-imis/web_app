@@ -9,14 +9,14 @@ var ctx = document.getElementById("SolidwasteChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $solidWasteChart['labels']); ?>],
+    labels: @json($solidWasteChart['labels']),
     datasets: [
         {
             label: "Payment Due",
-            backgroundColor: [<?php echo implode(',', $solidWasteChart['background_colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $solidWasteChart['colors']); ?>],
+            backgroundColor: @json($solidWasteChart['background_colors']),
+            hoverBackgroundColor: @json($solidWasteChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $solidWasteChart['values']); ?>],
+            data: @json($solidWasteChart['values']),
         }
     ]
 },

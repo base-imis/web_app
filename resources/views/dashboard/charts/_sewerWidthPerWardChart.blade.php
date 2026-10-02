@@ -11,14 +11,14 @@ var ctx = document.getElementById("sewerWidthPerWardChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $sewerWidthPerWardChart['labels']); ?>],
+    labels: @json($sewerWidthPerWardChart['labels']),
     datasets: [
         @foreach($sewerWidthPerWardChart['datasets'] as $dataset)
         {
             label: <?php echo $dataset['label']; ?>,
             backgroundColor: <?php echo $dataset['color']; ?>,
-            data: [<?php echo implode(',', $dataset['data']); ?>],
-            values:[<?php echo implode(',', $dataset['value']); ?>]
+            data: @json($dataset['data']),
+            values: @json($dataset['value'])
         },
         @endforeach
     ]

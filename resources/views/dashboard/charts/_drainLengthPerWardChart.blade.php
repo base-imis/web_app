@@ -11,7 +11,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)  (© ISPL, 2024) -->
         var myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: [<?php echo implode(',', $drainLengthPerWardChart['labels']); ?>],
+                labels: @json($drainLengthPerWardChart['labels']),
                 datasets: [
                     {
                         label: "Wardwise Drain Length(m)",
@@ -20,7 +20,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)  (© ISPL, 2024) -->
                         borderWidth: 1,
                         hoverBackgroundColor: "rgb(157,208,246)",
                         hoverBorderColor: "rgb(157,208,246)",
-                        data: [<?php echo implode(',', $drainLengthPerWardChart['values']); ?>],
+                        data: @json($drainLengthPerWardChart['values']),
                     }
                 ]
             },

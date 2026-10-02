@@ -72,19 +72,19 @@ class EmployeeInfoService {
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['employee-infos.destroy', $model->id]]);
 
                 if (Auth::user()->can('Edit Employee Info')) {
-                    $content .= '<a title="Edit" href="' . action("Fsm\EmployeeInfoController@edit", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
+                    $content .= '<a title="' . e(__("Edit")) . '" href="' . action("Fsm\EmployeeInfoController@edit", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Employee Info')) {
-                    $content .= '<a title="Detail" href="' . action("Fsm\EmployeeInfoController@show", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . action("Fsm\EmployeeInfoController@show", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Employee Info History')) {
-                    $content .= '<a title="History" href="' . action("Fsm\EmployeeInfoController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . action("Fsm\EmployeeInfoController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
 
                 if (Auth::user()->can('Delete Employee Info')) {
-                    $content .= '<a title="Delete" class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a title="' . e(__("Delete")) . '"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
 
                 $content .= \Form::close();

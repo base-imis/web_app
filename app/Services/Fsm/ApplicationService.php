@@ -826,32 +826,58 @@ class ApplicationService
             ->addColumn('action', function ($model) {
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['application.destroy', $model->id]]);
                 $content .= '<div class="">';
-                if (Auth::user()->can('Edit Application')){
-                    $content .= '<a title="Edit  Application Details" href="' . route('application.edit', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1 '. ($model->emptying_status? ' anchor-disabled' : '') . '"><i class="fa fa-edit"></i></a> ';
+                if (Auth::user()->can('Edit Application')) {
+                    $content .= '<a title="' . e(__('Edit  Application Details')) . '" href="' . route('application.edit', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1 ' . (($model->emptying_status == 1 || $model->emptying_status == 2) ? ' anchor-disabled' : '') . '"><i class="fa fa-edit"></i></a> ';
                 }
-                if (Auth::user()->can('View Application')){
-                    $content .= '<a title="View Application Details" href="' . route('application.show', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-list"></i></a> ';
+                if (Auth::user()->can('View Application')) {
+                    $content .= '<a title="' . e(__('View Application Details')) . '" href="' . route('application.show', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-list"></i></a> ';
                 }
-                if (Auth::user()->can('Edit Emptying') && $model->emptying_status){
-                    $content .= '<a title="Edit Emptying Service Details" href="' . route("emptying.edit", [$model->with('emptying')->where('id',$model->id)->get()->first()->emptying->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1'. ( $model->sludge_collection_status  ? ' anchor-disabled' : '') . '"><i class="fa fa-recycle"></i></a> ';
+                if (Auth::user()->can('Edit Emptying')) {
+                    $emptyingId = optional($model->emptying)->id;
+                    if ($emptyingId) {
+                        $content .= '<a title="' . e(__('Edit Emptying Service Details')) . '" href="'
+                            . route('emptying.edit', $emptyingId)
+                            . '" class="btn btn-info btn-sm mb-1'
+                            . ($emptyingTripNo == $collectionTripNo  ? ' anchor-disabled' : '')
+                            . '"><i class="fa fa-recycle"></i></a> ';
+                    }
                 }
-                if (Auth::user()->can('Edit Sludge Collection') && $model->sludge_collection_status){
-                    $content .= '<a title="Edit Sludge Collection Details" href="' . route("sludge-collection.edit", [$model->sludge_collection->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-truck-moving"></i></a> ';
-                }
-                if (Auth::user()->can('Edit Feedback') && $model->feedback_status){
-                    $content .= '<a title="Edit Feedback Details" href="' . route("feedback.edit", [$model->feedback->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-pencil"></i></a> ';
+                if (Auth::user()->can('Edit Sludge Collection')) {
+                    $sludgeId = optional($model->sludge_collection_log()->latest()->first())->id;
+
+                    if ($sludgeId) {
+                        $content .= '<a title="' . e(__('Edit Sludge Collection Details')) . '" '
+                            . ($emptyingTripNo > $collectionTripNo ? '' : 'href="' . route('sludge-collection.edit', $sludgeId) . '"')
+                            . ' class="btn btn-info btn-sm mb-1 '
+                            . ($model->feedback_status == 1 || $emptyingTripNo > $collectionTripNo ? 'anchor-disabled' : '')
+                            . '"><i class="fa fa-truck-moving"></i></a> ';
+                    }
                 }
 
-
-                if (Auth::user()->can('View Application History')){
-                $content .= '<a title="History" href="' . route('application.history', $model->id) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-history"></i></a> ';
-                if (Auth::user()->can('Delete Application')){
-                    $content .= '<a title="Delete"  class="delete btn btn-danger  btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                if (Auth::user()->can('Proposed Emptying Date')) {
+                    $content .= '<a title="' . e(__('Emptying Scheduling Form')) . '" href="'
+                        . route("emptying-scheduling", [$model->id])
+                        . '" class="btn btn btn-info btn-sm mb-1 mb-1'
+                        . (($model->emptying_status == 1 || $model->emptying_status == 2)
+                            ? ' anchor-disabled'
+                            : '')
+                        . '"><i class="fa fa-calendar-plus"></i></a>';
                 }
-            }
-                if (Auth::user()->can('Generate Application Report')){
-                    if ($model->emptying_status == TRUE) {
-                    $content .= '<a title="Generate Report" href="' . route('application.report', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa-regular fa-file-pdf"></i></a> ';
+
+                if (Auth::user()->can('View Application History')) {
+                    $content .= '<a title="' . e(__("History")) . '" href="' . route('application.history', $model->id) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa fa-history"></i></a> ';
+                    if (Auth::user()->can('Delete Application')) {
+                        $content .= '<a title="' . e(__("Delete")) . '"   class="delete btn btn-danger  btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    }
+                }
+
+                 if($model->bin != '' && Auth::user()->can('View Application History')) {
+                    $content .= '<a title="' . e(__("Map")) . '" href="' . action("MapsController@index", ['layer' => 'buildings_layer', 'field' => 'bin', 'val' => $model->bin]) . '" class="btn btn-info btn-sm mb-1"  ><i class="fas fa-map-marker"></i></a> ';
+                 }
+
+                if (Auth::user()->can('Generate Application Report')) {
+                    if ($model->emptying_status == 2) {
+                        $content .= '<a title="' . e(__("Generate Report")) . '" href="' . route('application.report', [$model->id]) . '" class="btn btn btn-info btn-sm mb-1 mb-1"><i class="fa-regular fa-file-pdf"></i></a> ';
                     }
                 }
 
@@ -862,14 +888,90 @@ class ApplicationService
             })
             ->editColumn('emptying_status',function($model){
                 $content = '<div class="application-quick__actions">';
-                $content .= $model->emptying_status?'<i class="fa fa-check"></i>' : '<i class="fa fa-times"></i>';
-                if ($model->emptying_status == TRUE) {
-                    if (Auth::user()->can('View Emptying')){
-                        $content .= '<a title="View Emptying Service Details" href="' . route("emptying.show", [$model->with('emptying')->where('id',$model->id)->get()->first()->emptying->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-recycle"></i></a> ';
+
+                $effectiveEmptyingStatus = 0;
+                if ($model->emptying_status || $emptyingTripNo > 0) {
+                    $effectiveEmptyingStatus = ($emptyingTripNo >= ($model->trip_count ?? 1)) ? 2 : 1;
+                }
+                $content .= ($effectiveEmptyingStatus == 0) ? '<i class="fa fa-times"></i>' : (($effectiveEmptyingStatus == 1) ? '<i class="fa fa-repeat"></i>' : '<i class="fa fa-check"></i>');
+
+                if ($model->proposed_emptying_date == null) {
+                    if (Auth::user()->can('Add Emptying')) {
+                        $content .= '<a title="' . e(__("Add Emptying Service Details")) . '" class="btn btn-info btn-sm mb-1 anchor-disabled"><i class="fa fa-recycle"></i></a> ';
+                    }
+                } else if ($model->emptying_status == 0 && $model->proposed_emptying_date != '') {
+                    if (Auth::user()->can('Add Emptying')) {
+                        $content .= '<a title="' . e(__("Add Emptying Service Details")) . '" href="' . route("emptying.create-id", [$model->id]) . '" class="btn btn-success btn-sm mb-1 "><i class="fa fa-recycle"></i></a> ';
+                    }
+                } else if (
+                    $model->emptying_status == 1 &&
+                    $model->sludge_collection_status == 1 &&
+                    $emptyingTripNo != $model->trip_count  && $emptyingTripNo  == $collectionTripNo
+
+                ) {
+                    if (Auth::user()->can('Add Emptying')) {
+                        $content .= '<a title="' . e(__("Add Next Emptying Service Details")) . '" href="'
+                            . route("emptying.create-id", [$model->id, 'mode' => 'next'])
+                            . '" class="btn btn-success btn-sm mb-1"><i class="fa fa-recycle"></i></a> ';
+                    }
+                } else if (($model->emptying_status == 1 && $model->sludge_collection_status == 0) && ($emptyingTripNo > $collectionTripNo)) {
+                    if (Auth::user()->can('View Emptying')) {
+                        $content .= '<a title="' . e(__("View Emptying Service Details")) . '" href="' . route("emptying.show", [$model->with('emptying')->where('id', $model->id)->get()->first()->emptying->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-recycle"></i></a> ';
                     }
                 } else {
-                    if (Auth::user()->can('Add Emptying')){
-                        $content .= '<a title="Add Emptying Service Details" href="' . route("emptying.create-id", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-recycle"></i></a> ';
+                    if (Auth::user()->can('View Emptying')) {
+                        $content .= '<a title="' . e(__("View Emptying Service Details")) . '" href="' . route("emptying.show", [$model->with('emptying')->where('id', $model->id)->get()->first()->emptying->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-recycle"></i></a> ';
+                    }
+                }
+
+                $content .= '</div>';
+                return $content;
+            })
+
+            ->editColumn('sludge_collection_status', function ($model) {
+                $collectionTripNo = optional($model->sludge_collection)->trip_no ?? 0;
+                $effectiveSludgeStatus = 0;
+                if ($model->sludge_collection_status || $collectionTripNo > 0) {
+                    $effectiveSludgeStatus = ($collectionTripNo >= ($model->trip_count ?? 1)) ? 2 : 1;
+                }
+                $content = '<div class="application-quick__actions">';
+                $content .= ($effectiveSludgeStatus == 0) ? '<i class="fa fa-times"></i>' : (($effectiveSludgeStatus == 1) ? '<i class="fa fa-repeat"></i>' : '<i class="fa fa-check"></i>');
+
+                if (($model->emptying_status == 1 || $model->emptying_status == 2) && $model->sludge_collection_status == 0) {
+                    if (Auth::user()->can('Add Sludge Collection')) {
+                        $content .= '<a title="' . e(__("Add Sludge Collection Details")) . '" href="' .
+                            route("sludge-collection.create-log-id", [$model->id]) .
+                            '" class="btn btn-success btn-sm mb-1' .
+                            ($model->emptying_status == 1 || $model->emptying_status == 2 ? '' : ' anchor-disabled') .
+                            '"><i class="fa fa-truck-moving"></i></a> ';
+                    }
+                } else if ($model->sludge_collection_status == 0) {
+                    if (Auth::user()->can('Add Sludge Collection')) {
+                        $content .= '<a title="' . e(__("Add Sludge Collection Details")) . '" href="' .
+                            route("sludge-collection.create-log-id", [$model->id]) .
+                            '" class="btn btn-info btn-sm mb-1' .
+                            ($model->emptying_status == 1 || $model->emptying_status == 2 ? '' : ' anchor-disabled') .
+                            '"><i class="fa fa-truck-moving"></i></a> ';
+                    }
+                } else if ($model->emptying_status == 1 &&  $model->sludge_collection_status == 1 && $model->emptying->trip_no  != $model->sludge_collection->trip_no) {
+                    if (Auth::user()->can('Add Sludge Collection')) {
+                        $content .= '<a title="' . e(__("Add Next Sludge Collection Details")) . '" href="' .
+                            route("sludge-collection.create-log-id", [$model->id]) .
+                            '" class="btn btn-success btn-sm mb-1' .
+                            ($model->emptying_status == 1 || $model->emptying_status == 2 ? '' : ' anchor-disabled') .
+                            '"><i class="fa fa-truck-moving"></i></a> ';
+                    }
+                } else if ($model->emptying_status == 2 &&  $model->sludge_collection_status == 1 && $model->emptying->trip_no  != $model->sludge_collection->trip_no) {
+                    if (Auth::user()->can('Add Sludge Collection')) {
+                        $content .= '<a title="' . e(__("Add Next Sludge Collection Details")) . '" href="' .
+                            route("sludge-collection.create-log-id", [$model->id]) .
+                            '" class="btn btn-success btn-sm mb-1' .
+                            ($model->emptying_status == 1 || $model->emptying_status == 2 ? '' : ' anchor-disabled') .
+                            '"><i class="fa fa-truck-moving"></i></a> ';
+                    }
+                } else {
+                    if (Auth::user()->can('View Sludge Collection')) {
+                        $content .= '<a title="' . e(__("View Sludge Collection Details")) . '" href="' . route("sludge-collection.show-details", [$model->sludge_collection->id]) . '" class="btn btn-info btn-sm mb-1' . ($model->emptying_status ? '' : ' anchor-disabled') . '"><i class="fa fa-truck-moving"></i></a> ';
                     }
                 }
                 $content .= '</div>';
@@ -879,16 +981,29 @@ class ApplicationService
                 $content = '<div class="application-quick__actions">';
                 $content .= $model->feedback_status?'<i class="fa fa-check"></i>' : '<i class="fa fa-times"></i>';
 
-                if($model->feedback_status == FALSE)
-                {
-                    if (Auth::user()->can('Add Feedback')){
-                        $content .= '<a title="Add Feedback Details" href="' . route("feedback.create-Feedback", [$model->id]) . '" class="btn btn-info btn-sm mb-1'. ( $model->emptying_status ? '' : ' anchor-disabled') . '"><i class="fa fa-pencil"></i></a> ';
+                if (
+                    $model->emptying_status == 2 &&
+                    $model->sludge_collection_status == 2 &&
+                    $model->feedback_status == 0 &&
+                    $model->emptying->trip_no == $model->sludge_collection->trip_no &&
+                    $model->sludge_collection->trip_no == $model->trip_count
+                ) {
+                    if (Auth::user()->can('Add Feedback')) {
+
+                        $content .= '<a title="' . e(__("Add Feedback Details")) . '"href="' . route("feedback.create-Feedback", [$model->id]) . '" class="btn btn-success btn-sm mb-1"><i class="fa fa-pencil"></i></a> ';
                     }
-                }
-                else
-                {
-                    if (Auth::user()->can('View Feedback')){
-                        $content .= '<a title="View Feedback Details" href="' . route("feedback.show", [$model->feedback->id]) . '" class="btn btn-info btn-sm mb-1'. ( $model->emptying_status ? '' : ' anchor-disabled') . '"><i class="fa fa-pencil"></i></a> ';
+                } else if ($model->feedback_status == 1) {
+                    if (Auth::user()->can('View Feedback')) {
+                        $content .= '<a title="' . e(__("Feedback Details")) . '" href="'
+                            . action("Fsm\FeedbackController@show", [$model->feedback->id])
+                            . '" class="btn btn-info btn-sm mb-1'
+                            . (($model->sludge_collection_status == 1 || $model->sludge_collection_status == 2) ? '' : ' anchor-disabled')
+                            . '"><i class="fa fa-pencil"></i></a> ';
+                    }
+                } else {
+                    if (Auth::user()->can('Add Feedback')) {
+                        // disable the feedback button
+                        $content .= '<a title="' . e(__("Feedback Disabled")) . '" href="#" class="btn btn-info btn-sm mb-1 anchor-disabled " tabindex="-1" aria-disabled="true"><i class="fa fa-pencil"></i></a> ';
                     }
                 }
                 $content .= '</div>';
@@ -898,10 +1013,20 @@ class ApplicationService
                 $content = '<div class="application-quick__actions">';
                 $content .= $model->sludge_collection_status?'<i class="fa fa-check"></i>' : '<i class="fa fa-times"></i>';
 
-                if($model->sludge_collection_status == FALSE)
-                {
-                    if (Auth::user()->can('Add Sludge Collection')){
-                        $content .= '<a title="Add Sludge Collection Details" href="' . route("sludge-collection.create-id", [$model->id]) . '" class="btn btn-info btn-sm mb-1'. ( $model->emptying_status ? '' : ' anchor-disabled') . '"><i class="fa fa-truck-moving"></i></a> ';
+
+            ->editColumn('proposed_emptying_date', function ($model) {
+
+
+                if (!empty($model->proposed_emptying_date) && strtotime($model->proposed_emptying_date)) {
+                    return Carbon::parse($model->proposed_emptying_date)->format('l, F jS Y');
+                } else {
+                    if (Auth::user()->can('Proposed Emptying Date')) {
+                       return '<div class="d-flex align-items-center justify-content-between w-100">
+                            <i class="fa fa-times"></i>
+                            <a href="' . route("emptying-scheduling", [$model->id]) . '" class="btn btn-success btn-sm" title="' . e(__("Emptying Scheduling Form")) . '">
+                                <i class="fa fa-calendar-plus"></i>
+                            </a>
+                        </div>';
                     }
                 }
                 else

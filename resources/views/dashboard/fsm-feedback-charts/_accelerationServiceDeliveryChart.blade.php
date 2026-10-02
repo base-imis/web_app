@@ -9,16 +9,16 @@ var ctx = document.getElementById("accelerationServiceDeliveryChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: [<?php echo implode(',', $accelerationServiceDeliveryChart['labels']); ?>],
+    labels: @json($accelerationServiceDeliveryChart['labels']),
     datasets: [
         {
             label: "Building Structures by building use",
-            backgroundColor: [<?php echo implode(',', $accelerationServiceDeliveryChart['colors']); ?>],
-            borderColor: [<?php echo implode(',', $accelerationServiceDeliveryChart['borderColor']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $accelerationServiceDeliveryChart['hoverBackgroundColor']); ?>],
-            hoverBorderColor: [<?php echo implode(',', $accelerationServiceDeliveryChart['hoverBorderColor']); ?>],
+            backgroundColor: @json($accelerationServiceDeliveryChart['colors']),
+            borderColor: @json($accelerationServiceDeliveryChart['borderColor']),
+            hoverBackgroundColor: @json($accelerationServiceDeliveryChart['hoverBackgroundColor']),
+            hoverBorderColor: @json($accelerationServiceDeliveryChart['hoverBorderColor']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $accelerationServiceDeliveryChart['values']); ?>],
+            data: @json($accelerationServiceDeliveryChart['values']),
         }
     ]
 },

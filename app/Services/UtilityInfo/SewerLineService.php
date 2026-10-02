@@ -63,23 +63,23 @@ class SewerLineService {
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['sewerlines.destroy', $model->code]]);
 
                 if (Auth::user()->can('Edit Sewer')) {
-                    $content .= '<a title="Edit" href="' . action("UtilityInfo\SewerLineController@edit", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
+                    $content .= '<a title="' . e(__("Edit")) . '" href="' . action("UtilityInfo\SewerLineController@edit", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Sewer')) {
-                    $content .= '<a title="Detail" href="' . action("UtilityInfo\SewerLineController@show", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . action("UtilityInfo\SewerLineController@show", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Sewer History')) {
-                    $content .= '<a title="History" href="' . action("UtilityInfo\SewerLineController@history", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . action("UtilityInfo\SewerLineController@history", [$model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
 
                 if (Auth::user()->can('Delete Sewer')) {
-                    $content .= '<a href="#" title="Delete"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a href="#" title="' . e(__("Delete")) . '"  class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
 
                 if (Auth::user()->can('View Sewer On Map')) {
-                    $content .= '<a title="Preview Sewer Location" href="' . action("MapsController@index", ['layer' => 'sewerlines_layer', 'field' => 'code', 'val' => $model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-map-marker"></i></a> ';
+                    $content .= '<a title="' . e(__("Map")) . '" href="' . action("MapsController@index", ['layer' => 'sewerlines_layer', 'field' => 'code', 'val' => $model->code]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-map-marker"></i></a> ';
                 }
 
                 $content .= \Form::close();

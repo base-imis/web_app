@@ -11,13 +11,13 @@ var ctx = document.getElementById("fsmSrvcQltyChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: [<?php echo implode(',', $fsmSrvcQltyChart['labels']); ?>],
+    labels: @json($fsmSrvcQltyChart['labels']),
     datasets: [
         {
             label: "Building Structures by building use",
-            backgroundColor: [<?php echo implode(',', $fsmSrvcQltyChart['colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $fsmSrvcQltyChart['hoverBackgroundColor']); ?>],
-            data: [<?php echo implode(',', $fsmSrvcQltyChart['values']); ?>],
+            backgroundColor: @json($fsmSrvcQltyChart['colors']),
+            hoverBackgroundColor: @json($fsmSrvcQltyChart['hoverBackgroundColor']),
+            data: @json($fsmSrvcQltyChart['values']),
         }
     ]
 },

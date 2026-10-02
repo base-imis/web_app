@@ -61,21 +61,21 @@ class CtptServiceClass{
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['ctpt.destroy', $model->id]]);
 
                 if (Auth::user()->can('Edit PT/CT Toilet')) {
-                    $content .= '<a title="Edit" href="' . action("Fsm\CtptController@edit", [$model->id]) .
+                    $content .= '<a title="' . e(__("Edit")) . '" href="' . action("Fsm\CtptController@edit", [$model->id]) .
                      '" class="btn btn-info btn-sm mb-1"><i class="fa fa-edit"></i></a> ';
                 }
                 if (Auth::user()->can('View PT/CT Toilet')) {
-                    $content .= '<a title="Detail" href="' . action("Fsm\CtptController@show", [$model->id]) .
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . action("Fsm\CtptController@show", [$model->id]) .
                     '"class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
                 if (Auth::user()->can('View PT/CT Toilet History')) {
-                    $content .= '<a title="History" href="' . action("Fsm\CtptController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . action("Fsm\CtptController@history", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
                 if (Auth::user()->can('Delete PT/CT Toilet')) {
-                    $content .= '<a title="Delete"  class="delete btn btn-danger btn-xs btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a title="' . e(__("Delete")) . '"  class="delete btn btn-danger btn-xs btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
                 if (Auth::user()->can('View PT/CT Toilet on Map')) {
-                    $content .= '<a title="Map" href="' . action("MapsController@index", ['layer' => 'toilets_layer', 'field' => 'id', 'val' => $model->id]) .
+                    $content .= '<a title="' . e(__("Map")) . '" href="' . action("MapsController@index", ['layer' => 'toilets_layer', 'field' => 'id', 'val' => $model->id]) .
                     '" class="btn btn-info btn-sm mb-1"><i class="fa fa-map-marker"></i></a> ';
                 }
                 $content .= \Form::close();

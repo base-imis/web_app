@@ -10,14 +10,14 @@ var ctx = document.getElementById("containTypeChart");
 var myChart = new Chart(ctx, {
   type: 'pie',
   data: {
-    labels: [<?php echo implode(',', $containTypeChart['labels']); ?>],
+    labels: @json($containTypeChart['labels']),
     datasets: [
         {
             label: "Proportion of Different Containment Type chart",
-            backgroundColor: [<?php echo implode(',', $containTypeChart['colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $containTypeChart['colors']); ?>],
+            backgroundColor: @json($containTypeChart['colors']),
+            hoverBackgroundColor: @json($containTypeChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $containTypeChart['values']); ?>],
+            data: @json($containTypeChart['values']),
         }
     ]
 },

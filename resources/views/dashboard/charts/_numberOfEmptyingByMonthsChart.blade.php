@@ -9,14 +9,14 @@ var ctx = document.getElementById("numberOfEmptyingbyMonthsChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $numberOfEmptyingbyMonthsChart['labels']); ?>],
+    labels: @json($numberOfEmptyingbyMonthsChart['labels']),
     datasets: [
         @foreach($numberOfEmptyingbyMonthsChart['datasets'] as $dataset)
         {
             stack: <?php echo $dataset['stack']; ?>,
             label: <?php echo $dataset['label']; ?>,
             backgroundColor: <?php echo $dataset['color']; ?>,
-            data: [<?php echo implode(',', $dataset['data']); ?>],
+            data: @json($dataset['data']),
         },
         @endforeach
     ]

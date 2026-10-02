@@ -16,14 +16,14 @@ var ctx = document.getElementById("buildingFloorCountPerWard");
         var myChart = new Chart(ctx, {
       type: 'bar',
       data: {
-            labels: [{{ implode(',', $buildingFloorCountPerWard['labels']) }}],
+            labels: @json($buildingFloorCountPerWard['labels']),
             datasets: [
                 @foreach($buildingFloorCountPerWard['datasets'] as $dataset)
                 {
                     label: '{{ $dataset['label'] }}',
                     backgroundColor: '{{ $dataset['backgroundColor'] }}',
-                    data: [{{ implode(',', $dataset['data']) }}],
-                    values:[<?php echo implode(',', $dataset['value']); ?>]
+                    data: @json($dataset['data']),
+                    values: @json($dataset['value'])
                 },
                 @endforeach
             ]

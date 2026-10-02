@@ -9,14 +9,14 @@ var ctx = document.getElementById("buildingUseChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: [<?php echo implode(',', $buildingUseChart['labels']); ?>],
+    labels: @json($buildingUseChart['labels']),
     datasets: [
         {
             label: " Building Use Composition",
-            backgroundColor: [<?php echo implode(',', $buildingUseChart['colors']); ?>],
-            hoverBackgroundColor: [<?php echo implode(',', $buildingUseChart['colors']); ?>],
+            backgroundColor: @json($buildingUseChart['colors']),
+            hoverBackgroundColor: @json($buildingUseChart['colors']),
             borderWidth: 1,
-            data: [<?php echo implode(',', $buildingUseChart['values']); ?>],
+            data: @json($buildingUseChart['values']),
         }
     ]
 },

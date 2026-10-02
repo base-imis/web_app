@@ -9,13 +9,13 @@
         var myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: [<?php echo implode(',', $hotspotsPerWardChart['labels']); ?>],
+                labels: @json($hotspotsPerWardChart['labels']),
                 datasets: [
                     {
                         label: "No. of Hotspots",
                         backgroundColor: "rgba(54, 162, 235,0.5)",
                         hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-                        data: [<?php echo implode(',', $hotspotsPerWardChart['values']); ?>],
+                        data: @json($hotspotsPerWardChart['values']),
                     }
                 ]
             },

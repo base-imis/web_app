@@ -422,8 +422,13 @@ class BuildingController extends Controller
             $tbody .= '<tr>';
             $tbody .= '<td>' . $row1['id'] . '</td>';
             $tbody .= '<td>' . $row1['containment_type']['type'] . '</td>';
-            $tbody .= '<td class="text-center"><a title="Containment Detail" href="' . action("Fsm\ContainmentController@show", ['containment' => $row1['id']]) . '" class="btn btn-info btn-sm mb-1">
-              <i class="fa fa-info-circle" aria-hidden="true"></i></a></td>';
+            $tbody .= '<td class="text-center">
+                        <a title="' . e(__('Containment Detail')) . '"
+                           href="' . action("Fsm\ContainmentController@show", ['containment' => $row1['id']]) . '"
+                           class="btn btn-info btn-sm mb-1">
+                           <i class="fa fa-info-circle" aria-hidden="true"></i>
+                        </a>
+                       </td>';
             $tbody .= '</tr>';
         }
         $tbody .= '</tbody>';

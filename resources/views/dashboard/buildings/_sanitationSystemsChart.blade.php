@@ -14,13 +14,13 @@ var ctx = document.getElementById("sanitationSystemsChart");
 var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: [<?php echo implode(',', $sanitationSystemsChart['labels']); ?>],
+        labels: @json($sanitationSystemsChart['labels']),
         datasets: [
             {
                 label: "No. of buildings",
                 backgroundColor: "rgba(54, 162, 235,0.5)",
                 hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-                data: [<?php echo implode(',', $sanitationSystemsChart['values']); ?>],
+                data: @json($sanitationSystemsChart['values']),
             }
         ]
     },

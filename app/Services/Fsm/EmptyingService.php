@@ -940,13 +940,13 @@ class EmptyingService
                 $content = \Form::open(['method' => 'DELETE', 'route' => ['emptying.destroy', $model->id]]);
                 $content .= '<div class="">';
                 if (Auth::user()->can('View Emptying')) {
-                    $content .= '<a title="Detail" href="' . route('emptying.show', [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . e(__("Detail")) . '" href="' . route('emptying.show', [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
                 if (Auth::user()->can('View Emptyings History')) {
-                $content .= '<a title="History" href="' . route('emptying.history', $model->id) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
+                    $content .= '<a title="' . e(__("History")) . '" href="' . route('emptying.history', $model->id) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-history"></i></a> ';
                 }
                 if (Auth::user()->can('Delete Emptying')) {
-                    $content .= '<a title="Delete"  class="delete  btn-danger btn  btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
+                    $content .= '<a title="' . e(__("Delete")) . '"  class="delete  btn-danger btn  btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
                 }
                 $content .= '</div>';
                 $content .= \Form::close();

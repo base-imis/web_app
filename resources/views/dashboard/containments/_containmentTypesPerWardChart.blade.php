@@ -11,14 +11,14 @@ var ctx = document.getElementById("containmentTypesPerWardChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: [<?php echo implode(',', $containmentTypesPerWardChart['labels']); ?>],
+    labels: @json($containmentTypesPerWardChart['labels']),
     datasets: [
         @foreach($containmentTypesPerWardChart['datasets'] as $dataset)
         {
             label: <?php echo $dataset['label']; ?>,
             backgroundColor: <?php echo $dataset['color']; ?>,
-            data: [<?php echo implode(',', $dataset['data']); ?>],
-            values:[<?php echo implode(',', $dataset['value']); ?>]
+            data: @json($dataset['data']),
+            values: @json($dataset['value'])
 
         },
         @endforeach
