@@ -4,6 +4,6 @@
 
 @section('content')
     @include('dashboard._asyncDashboardLoader', [
-        'dashboardContentEndpoint' => route('dashboard.content'),
+        'dashboardContentEndpoint' => route('buildingdashboard.content'),
     ])
 @stop
