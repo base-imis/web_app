@@ -85,38 +85,15 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 ],
                 order: [
                     [0, 'desc']
-                ]
-
-            }).on('draw', function() {
-               
-        $('.delete').on('click', function(e) {
-
-            var form =  $(this).closest("form");
-            event.preventDefault();
-            Swal.fire({
-            title: "{{__('Are you sure?')}}",
-                    text: {{ Illuminate\Support\Js::from(__('You won\'t be able to revert this!')) }},
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: "{{ __('Yes, delete it!') }}",
-                    cancelButtonText: '{{ __('Cancel') }}',
-            }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-            })
             });
-       
-        filterDataTable(dataTable);
-        resetDataTable(dataTable);
 
-    $('#filter-form').on('submit', function(e) {
+            filterDataTable(dataTable);
+            resetDataTable(dataTable);
 
-        var date_from = $('#date_from').val();
-        var date_to = $('#date_to').val();
-        if (date_from !== '' && date_to !== '' && (date_to <= date_from)) {
+            $('#filter-form').on('submit', function(e) {
+                var date_from = $('#date_from').val();
+                var date_to = $('#date_to').val();
+                if (date_from !== '' && date_to !== '' && (date_to <= date_from)) {
                     Swal.fire({
                         title: 'Invalid Date Range',
                         text: "Date To cannot be Before Date From!",
@@ -129,22 +106,20 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 
                     return false;
                 }
-        if ((date_from !== '') && (date_to === '')) {
+                if ((date_from !== '') && (date_to === '')) {
+                    Swal.fire({
+                        title: 'Date To is Required',
+                        text: "Please Select Date To!",
+                        icon: 'warning',
+                        showCancelButton: false,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Close'
+                    });
 
-            Swal.fire({
-                title: 'Date To is Required',
-                text: "Please Select Date To!",
-                icon: 'warning',
-                showCancelButton: false,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Close'
-            })
-
-            return false;
-        }
-        if ((date_from === '') && (date_to !== '')) {
-
+                    return false;
+                }
+                if ((date_from === '') && (date_to !== '')) {
                     Swal.fire({
                         title: 'Date From is Required',
                         text: "Please Select Date From!",
@@ -153,21 +128,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                         confirmButtonColor: '#3085d6',
                         cancelButtonColor: '#d33',
                         confirmButtonText: 'Close'
-                    })
+                    });
 
                     return false;
                 }
                 e.preventDefault();
                 dataTable.draw();
-                application_id = $('#application_id').val();
-                date_from = $('#date_from').val();
-                date_to = $('#date_to').val();
-                containment_id = $('#containment_id').val();
-                emptied_date = $('#emptied_date').val();
-
-    });
-           
-
-    });
+            });
+        });
     </script>
 @endpush

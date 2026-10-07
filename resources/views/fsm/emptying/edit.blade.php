@@ -35,6 +35,6 @@ $(document).ready(function() {
                 validateFileSize(document.querySelector('#receipt_image'),'fileSizeRintImg','5');
             });
             
-})
+});
  </script>
 @endpush

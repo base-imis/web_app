@@ -258,7 +258,7 @@ function selectAnfBuilding(bin, containmentId) {
                 toastr.success('{{ __('Building and containment linked successfully. Resolving ANF') }}...', 'Success', {
                     timeOut: 2000,
                     onHidden: function () {
-                        window.location.reload();s
+                        window.location.reload();
                     }
                 });
             }
