@@ -16,13 +16,13 @@ var ctx = document.getElementById("buildingFloorCountPerWard");
         var myChart = new Chart(ctx, {
       type: 'bar',
       data: {
-            labels: @json($buildingFloorCountPerWard['labels']),
+            labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($buildingFloorCountPerWard['labels'] ?? [])))),
             datasets: [
                 @foreach($buildingFloorCountPerWard['datasets'] as $dataset)
                 {
                     label: '{{ $dataset['label'] }}',
                     backgroundColor: '{{ $dataset['backgroundColor'] }}',
-                    data: @json($dataset['data']),
+                    data: @json(array_values($dataset['data'] ?? [])),
                     values: @json($dataset['value'])
                 },
                 @endforeach

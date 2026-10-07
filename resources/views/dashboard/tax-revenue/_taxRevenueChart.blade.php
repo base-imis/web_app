@@ -9,14 +9,14 @@ var ctx = document.getElementById("taxRevenueChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: @json($taxRevenueChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($taxRevenueChart['labels'] ?? [])))),
     datasets: [
         {
             label: "Payment Due",
-            backgroundColor: @json($taxRevenueChart['background_colors']),
-            hoverBackgroundColor: @json($taxRevenueChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($taxRevenueChart['background_colors'] ?? [])))),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($taxRevenueChart['colors'] ?? [])))),
             borderWidth: 1,
-            data: @json($taxRevenueChart['values']),
+            data: @json(array_values($taxRevenueChart['values'] ?? [])),
         }
     ]
 },

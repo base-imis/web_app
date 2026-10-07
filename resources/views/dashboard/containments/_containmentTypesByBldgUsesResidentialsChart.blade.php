@@ -11,13 +11,13 @@ var ctx = document.getElementById("containmentTypesByBldgUsesResidentialsChart")
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: @json($containmentTypesByBldgUsesResidentialsChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($containmentTypesByBldgUsesResidentialsChart['labels'] ?? [])))),
     datasets: [
         @foreach($containmentTypesByBldgUsesResidentialsChart['datasets'] as $dataset)
         {
-            label: <?php echo $dataset['label']; ?>,
-            backgroundColor: <?php echo $dataset['color']; ?>,
-            data: @json($dataset['data']),
+            label: @json($dataset['label'] ?? null),
+            backgroundColor: @json($dataset['color'] ?? null),
+            data: @json(array_values($dataset['data'] ?? [])),
             values: @json($dataset['value'])
         },
         @endforeach

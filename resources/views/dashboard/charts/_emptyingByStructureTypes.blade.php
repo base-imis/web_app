@@ -9,13 +9,13 @@ var ctx = document.getElementById("emptyingRequestsbyStructureTypesChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: @json($emptyingRequestsbyStructureTypesChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($emptyingRequestsbyStructureTypesChart['labels'] ?? [])))),
     datasets: [
         {
             label: "No. of Emptying Requests",
             backgroundColor: "rgba(54, 162, 235,0.5)",
             hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-            data: @json($emptyingRequestsbyStructureTypesChart['values']),
+            data: @json(array_values($emptyingRequestsbyStructureTypesChart['values'] ?? [])),
         }
     ]
 },

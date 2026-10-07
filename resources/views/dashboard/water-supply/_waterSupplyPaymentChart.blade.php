@@ -9,14 +9,14 @@ var ctx = document.getElementById("waterSupplyPaymentChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: @json($waterSupplyPaymentChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($waterSupplyPaymentChart['labels'] ?? [])))),
     datasets: [
         {
             label: "Payment Due",
-            backgroundColor: @json($waterSupplyPaymentChart['background_colors']),
-            hoverBackgroundColor: @json($waterSupplyPaymentChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($waterSupplyPaymentChart['background_colors'] ?? [])))),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($waterSupplyPaymentChart['colors'] ?? [])))),
             borderWidth: 1,
-            data: @json($waterSupplyPaymentChart['values']),
+            data: @json(array_values($waterSupplyPaymentChart['values'] ?? [])),
         }
     ]
 },

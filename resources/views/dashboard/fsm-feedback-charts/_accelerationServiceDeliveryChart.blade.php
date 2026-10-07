@@ -9,16 +9,16 @@ var ctx = document.getElementById("accelerationServiceDeliveryChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: @json($accelerationServiceDeliveryChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($accelerationServiceDeliveryChart['labels'] ?? [])))),
     datasets: [
         {
             label: "Building Structures by building use",
-            backgroundColor: @json($accelerationServiceDeliveryChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($accelerationServiceDeliveryChart['colors'] ?? [])))),
             borderColor: @json($accelerationServiceDeliveryChart['borderColor']),
-            hoverBackgroundColor: @json($accelerationServiceDeliveryChart['hoverBackgroundColor']),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($accelerationServiceDeliveryChart['hoverBackgroundColor'] ?? [])))),
             hoverBorderColor: @json($accelerationServiceDeliveryChart['hoverBorderColor']),
             borderWidth: 1,
-            data: @json($accelerationServiceDeliveryChart['values']),
+            data: @json(array_values($accelerationServiceDeliveryChart['values'] ?? [])),
         }
     ]
 },

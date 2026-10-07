@@ -9,14 +9,14 @@ var ctx = document.getElementById("buildingUseChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: @json($buildingUseChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($buildingUseChart['labels'] ?? [])))),
     datasets: [
         {
             label: " Building Use Composition",
-            backgroundColor: @json($buildingUseChart['colors']),
-            hoverBackgroundColor: @json($buildingUseChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($buildingUseChart['colors'] ?? [])))),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($buildingUseChart['colors'] ?? [])))),
             borderWidth: 1,
-            data: @json($buildingUseChart['values']),
+            data: @json(array_values($buildingUseChart['values'] ?? [])),
         }
     ]
 },

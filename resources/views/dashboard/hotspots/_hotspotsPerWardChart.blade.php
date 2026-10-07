@@ -9,13 +9,13 @@
         var myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: @json($hotspotsPerWardChart['labels']),
+                labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($hotspotsPerWardChart['labels'] ?? [])))),
                 datasets: [
                     {
                         label: "No. of Hotspots",
                         backgroundColor: "rgba(54, 162, 235,0.5)",
                         hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-                        data: @json($hotspotsPerWardChart['values']),
+                        data: @json(array_values($hotspotsPerWardChart['values'] ?? [])),
                     }
                 ]
             },

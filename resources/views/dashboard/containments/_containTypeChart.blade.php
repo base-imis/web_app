@@ -10,14 +10,14 @@ var ctx = document.getElementById("containTypeChart");
 var myChart = new Chart(ctx, {
   type: 'pie',
   data: {
-    labels: @json($containTypeChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($containTypeChart['labels'] ?? [])))),
     datasets: [
         {
             label: "Proportion of Different Containment Type chart",
-            backgroundColor: @json($containTypeChart['colors']),
-            hoverBackgroundColor: @json($containTypeChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($containTypeChart['colors'] ?? [])))),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($containTypeChart['colors'] ?? [])))),
             borderWidth: 1,
-            data: @json($containTypeChart['values']),
+            data: @json(array_values($containTypeChart['values'] ?? [])),
         }
     ]
 },

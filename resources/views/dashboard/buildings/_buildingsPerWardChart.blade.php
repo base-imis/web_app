@@ -9,13 +9,13 @@ var ctx = document.getElementById("buildingsPerWardChart");
 var myChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: @json($buildingsPerWardChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($buildingsPerWardChart['labels'] ?? [])))),
     datasets: [
         {
             label: "No. of buildings",
             backgroundColor: "rgba(54, 162, 235,0.5)",
             hoverBackgroundColor: "rgba(54, 162, 235,0.7)",
-            data: @json($buildingsPerWardChart['values']),
+            data: @json(array_values($buildingsPerWardChart['values'] ?? [])),
         }
     ]
 },

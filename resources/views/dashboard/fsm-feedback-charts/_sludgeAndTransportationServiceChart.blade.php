@@ -9,14 +9,14 @@ var ctx = document.getElementById("sludgeAndTransportationServiceChart");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: @json($sludgeAndTransportationServiceChart['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($sludgeAndTransportationServiceChart['labels'] ?? [])))),
     datasets: [
         {
             label: "Building Structures by building use",
-            backgroundColor: @json($sludgeAndTransportationServiceChart['colors']),
-            hoverBackgroundColor: @json($sludgeAndTransportationServiceChart['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($sludgeAndTransportationServiceChart['colors'] ?? [])))),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($sludgeAndTransportationServiceChart['colors'] ?? [])))),
             borderWidth: 1,
-            data: @json($sludgeAndTransportationServiceChart['values']),
+            data: @json(array_values($sludgeAndTransportationServiceChart['values'] ?? [])),
         }
     ]
 },

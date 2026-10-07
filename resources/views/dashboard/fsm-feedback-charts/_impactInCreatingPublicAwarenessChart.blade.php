@@ -9,16 +9,16 @@ var ctx = document.getElementById("impactCreatingPublicAwareness");
 var myChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
-    labels: @json($impactCreatingPublicAwareness['labels']),
+    labels: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($impactCreatingPublicAwareness['labels'] ?? [])))),
     datasets: [
         {
             label: "Impact In Creating Public Awareness",
-            backgroundColor: @json($impactCreatingPublicAwareness['colors']),
+            backgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($impactCreatingPublicAwareness['colors'] ?? [])))),
             borderColor: @json($impactCreatingPublicAwareness['borderColor']),
-            hoverBackgroundColor: @json($impactCreatingPublicAwareness['hoverBackgroundColor']),
+            hoverBackgroundColor: @json(array_values(array_map(function($x) { return is_string($x) ? trim($x, '"\'') : $x; }, (array)($impactCreatingPublicAwareness['hoverBackgroundColor'] ?? [])))),
             hoverBorderColor: @json($impactCreatingPublicAwareness['hoverBorderColor']),
             borderWidth: 1,
-            data: @json($impactCreatingPublicAwareness['values']),
+            data: @json(array_values($impactCreatingPublicAwareness['values'] ?? [])),
         }
     ]
 },
