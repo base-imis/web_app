@@ -1307,9 +1307,18 @@ class ApplicationService
                             "road_code" => $request->road_code,
                         ])->save();
 
-                        $building->household_served  = $request->household_served;
-                        $building->population_served = $request->population_served;
-                        $building->toilet_count      = $request->toilet_count;
+                        if ($request->filled('household_served')) {
+                            $building->household_served = $request->household_served;
+                        }
+
+                        if ($request->filled('population_served')) {
+                            $building->population_served = $request->population_served;
+                        }
+
+                        if ($request->filled('toilet_count')) {
+                            $building->toilet_count = $request->toilet_count;
+                        }
+
                         $building->save();
                     }
 
@@ -1324,37 +1333,6 @@ class ApplicationService
                         $application->applicant_gender  = $request->applicant_gender;
                     }
 
-                    $owner->fill([
-                            "owner_name" => $request->customer_name??$owner->owner_name,
-                            "owner_gender" => $request->customer_gender??$owner->owner_gender,
-                            "owner_contact" => $request->customer_contact??$owner->owner_contact
-                        ]
-                    )->save();
-                    $building->fill([
-                        "ward" => $request->ward??$building->ward,
-                        "road_code" => $request->road_code,
-
-                    ])->save();
-                    if ($request->filled('household_served')) {
-                        $building->household_served = $request->household_served;
-                    }
-
-                    if ($request->filled('population_served')) {
-                        $building->population_served = $request->population_served;
-                    }
-
-                    if ($request->filled('toilet_count')) {
-                        $building->toilet_count = $request->toilet_count;
-                    }
-
-                    $building->save();
-                    $application->application_date = now()->format('Y-m-d H:i:s');
-                    $application->user_id = Auth::user()->id;
-                    if($request->autofill === 'on'){
-                        $application->applicant_name = $request->customer_name??$owner->owner_name??null;
-                        $application->applicant_contact = $request->customer_contact??$owner->owner_contact??null;
-                        $application->applicant_gender = $request->customer_gender??$owner->owner_gender??null;
-                    };
                     if (empty($application->desludging_vehicle_size) && !empty($application->service_provider_id)) {
                         $application->desludging_vehicle_size = VacutugType::where('service_provider_id', $application->service_provider_id)
                             ->whereNotNull('capacity')
