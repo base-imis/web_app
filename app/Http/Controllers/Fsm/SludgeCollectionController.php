@@ -321,13 +321,6 @@ foreach ($recipientIds as $userId) {
     ]);
 }
 
-if (!empty($recipientIds)) {
-    app(\App\Services\OneSignalService::class)->sendToUsers(
-        $recipientIds,
-        'Sludge Disposal Completed',
-        $message
-    );
-}
             });
 
 
