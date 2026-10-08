@@ -65,7 +65,6 @@ class Application extends Model
         'deleted_at',
         'application_date',
         'proposed_emptying_date',
-        'supervisory_assessment_date',
     ];
 
     /**
@@ -84,7 +83,6 @@ class Application extends Model
         'customer_gender',
         'customer_contact',
         'proposed_emptying_date',
-        'supervisory_assessment_date',
         'service_provider_id',
         'emergency_desludging_status',
         'containment_id',
