@@ -28,7 +28,7 @@ class BuildingSearchController extends Controller
     }
     ///api to search building , bin , road by id and also get similar id//
     public function getBuildingBin($bin){
-        $similarBuildings = Building::whereRaw('bin ILIKE ?', [$bin . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("bin ILIKE '".$bin."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',
@@ -40,7 +40,7 @@ class BuildingSearchController extends Controller
 
 
     public function getBuildingRoadcode($roadcode){
-        $similarBuildings = Building::whereRaw('road_code ILIKE ?', [$roadcode . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("road_code ILIKE '".$roadcode."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',
@@ -51,7 +51,7 @@ class BuildingSearchController extends Controller
     }
 
     public function getBuildingHouseNumber($housenumber){
-        $similarBuildings = Building::whereRaw('house_number ILIKE ?', [$housenumber . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("house_number ILIKE '".$housenumber."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',
@@ -63,7 +63,7 @@ class BuildingSearchController extends Controller
 
 
     public function getSewerCode($sewercode){
-        $similarBuildings = Building::whereRaw('sewer_code ILIKE ?', [$sewercode . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("sewer_code ILIKE '".$sewercode."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',
@@ -74,7 +74,7 @@ class BuildingSearchController extends Controller
     }
 
     public function getBinOfPreconnectedBuilding($Pcbin){
-        $similarBuildings = Building::whereRaw('house_number ILIKE ?', [$Pcbin . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("house_number ILIKE '".$Pcbin."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',
@@ -85,7 +85,7 @@ class BuildingSearchController extends Controller
     }
 
     public function getSanitationSystem($Sanitation){
-        $similarBuildings = Building::whereRaw('sanitation_system ILIKE ?', [$Sanitation . '%'])->take(10)->get();
+        $similarBuildings = Building::whereRaw("sanitation_system ILIKE '".$Sanitation."%'")->take(10)->get();
         return response()->json([
             'status' => 200,
             'code' => 'Fetched',

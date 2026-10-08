@@ -115,7 +115,7 @@ class WaterSupplysService
             $waterSupplys->project_name = $data['project_name'] ? $data['project_name'] : null;
             $waterSupplys->type = $data['type'] ? $data['type'] : null;
             $waterSupplys->material_type = $data['material_type'] ? $data['material_type'] : null;
-            $waterSupplys->geom = $data['geom'] ? \App\Support\GeometryValue::fromWkt($data['geom'], 4326, true, ['LINESTRING', 'MULTILINESTRING']) : null;
+            $waterSupplys->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
             $waterSupplys->save();
         } else {
 

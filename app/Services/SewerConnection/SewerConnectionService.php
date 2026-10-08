@@ -131,7 +131,7 @@ class SewerConnectionService {
             $geoms = $building->geom;
         
             // Execute the SQL query to convert the geom to WKT
-            $wktResult = DB::select('SELECT ST_AsText(?::geometry) AS wkt_geom', [$geoms]);
+            $wktResult = DB::select("SELECT ST_AsText('$geoms') AS wkt_geom");
         
             // Extract the WKT representation from the query result
             $geom = $wktResult[0]->wkt_geom;
@@ -154,7 +154,7 @@ class SewerConnectionService {
             $geomsewer = $sewerCode->geom;
     
             // Execute the SQL query to convert the sewer geom to WKT
-            $wktResult = DB::select('SELECT ST_AsText(?::geometry) AS wkt_geom', [$geomsewer]);
+            $wktResult = DB::select("SELECT ST_AsText('$geomsewer') AS wkt_geom");
     
             // Extract the WKT representation from the query result
             $wktGeom = $wktResult[0]->wkt_geom;

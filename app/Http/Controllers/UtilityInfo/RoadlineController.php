@@ -267,7 +267,7 @@ class RoadlineController extends Controller
          }
      
          // Update the geometry field
-         $roadline->geom = \App\Support\GeometryValue::fromWkt($request->geom, 4326, false, ['LINESTRING', 'MULTILINESTRING']); // Ensure the SRID is set properly
+         $roadline->geom = DB::raw("ST_SetSRID(ST_GeomFromText('". $request->geom ."'), 4326)"); // Ensure the SRID is set properly
          $roadline->length = $request->length;
          $roadline->save();
          

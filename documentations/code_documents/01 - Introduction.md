@@ -1,4 +1,4 @@
-Version: V1.1.0
+Version: V1.0.0
 
 # Introduction
 
@@ -9,12 +9,3 @@ The purpose of the document is to outline the technical process flow of IMIS and
 ## Target Audience
 
 Target Audiences of this manual are the core system developers of IMIS.
-
-## Core Cross-Cutting References
-
-The following documents describe behavior shared across multiple IMIS modules:
-
-- `02 - Technical Information.md`: application structure, sessions, frontend conventions, layouts, and shared cache requirements.
-- `03 - Dashboard.md`: shell-first dashboard loading, content endpoints, main-dashboard caching, invalidation, navigation loading, and dashboard testing.
-- `15 - API documentation.md`: API routes, request formats, responses, and API login throttling.
-- `22 - Authentication and Web Security.md`: browser and API login controls, trusted proxies, password-reset privacy, clickjacking protection, deployment, and security tests.

@@ -52,12 +52,12 @@ class KpiDashboardController extends Controller
 
         // Count buildings with sanitation system technology excluded
         $countSanitationSystemIncluded = DB::table('building_info.buildings')
-        ->whereRaw('EXTRACT(YEAR FROM construction_year) <= ?', [$year])
+        ->whereRaw("EXTRACT(YEAR FROM construction_year) <= $year")
         ->whereNotIn('sanitation_system_id', [4]) 
         ->count();
     
         $countSanitationSystem_ptIncluded = DB::table('building_info.buildings')
-        ->whereRaw('EXTRACT(YEAR FROM construction_year) <= ?', [$year])
+        ->whereRaw("EXTRACT(YEAR FROM construction_year) <= $year")
             ->whereIn('sanitation_system_id', [4]) // 1 = 'Single Pit', 2='Cesspool/ Holding Tank', 9='Double Pit with Soak Away Pit'
             ->count();
       
@@ -76,10 +76,6 @@ class KpiDashboardController extends Controller
      */
     public function data($select_year= null, $service_provider_id= null)
     {
-        validator(['year' => $select_year, 'service_provider' => $service_provider_id], [
-            'year' => ['nullable', 'integer'],
-            'service_provider' => ['nullable', 'integer'],
-        ])->validate();
         $keyPerformanceData = [];
         $cards_kpi =[];
         
@@ -88,20 +84,17 @@ class KpiDashboardController extends Controller
         // Check if the logged-in user has roles related to service provider admin or help desk
         if(Auth::user()->hasRole('Service Provider - Admin') || Auth::user()->hasRole('Service Provider - Help Desk'))
             {
-                $service_provider_id = Auth::user()->service_provider_id;
-                abort_if(empty($service_provider_id), 403, 'A service provider assignment is required.');
+                $service_provider_id = Auth::user()->service_provider_id;     
             }
         
         if(!empty($service_provider_id))
             {
-                $whereServiceProviderID = "a.service_provider_id = ?";
-                $serviceProviderBindings = [$service_provider_id];
+                $whereServiceProviderID = "a.service_provider_id = " . $service_provider_id;
             }
         else
             {
                 // If the service_provider_id is empty, set a condition that always evaluates to true
                 $whereServiceProviderID = "1 = 1";
-                $serviceProviderBindings = [];
             }
         
         // Constructing the base query to retrieve data related to applications, emptyings, sludge collections, feedbacks, and service providers
@@ -120,7 +113,7 @@ class KpiDashboardController extends Controller
                     'f.wear_ppe',
                     'f.fsm_service_quality as quality')
                 
-            ->whereRaw($whereServiceProviderID, $serviceProviderBindings)
+            ->whereRaw($whereServiceProviderID)
             ->whereNull('a.deleted_at');
 
         
@@ -152,11 +145,11 @@ class KpiDashboardController extends Controller
 
                 //Response Time
                 // query to retrieve the average time between application date and emptied date  for each year,  where the application date year matches the selected year and optionally by service provider ID.
-                $response = DB::select(" SELECT  EXTRACT(YEAR FROM a.application_date) AS year, AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE    EXTRACT (YEAR FROM a.application_date) = ? and $whereServiceProviderID GROUP BY year ", array_merge([$select_year], $serviceProviderBindings));
+                $response = DB::select(DB::raw(" SELECT  EXTRACT(YEAR FROM a.application_date) AS year, AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE    EXTRACT (YEAR FROM a.application_date) = $select_year and $whereServiceProviderID GROUP BY year "));
 
                 // Inclusion
                 // query to retrieve the total application count for buildings within low-income communities,  where the application date year matches the selected year and optionally by service provider
-                $inclusion = DB::select("SELECT
+                $inclusion = DB::select(DB::raw("SELECT
                         SUM(application_count) AS total_application_count
                     FROM
                         (SELECT
@@ -173,18 +166,18 @@ class KpiDashboardController extends Controller
                             emptyings.application_id IN (
                                 SELECT a.id
                                 FROM fsm.applications AS a
-                                WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = ? and  $whereServiceProviderID
+                                WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = $select_year and  $whereServiceProviderID
                             )
                         GROUP BY
                             buildings.geom) AS subquery;
-                    ", array_merge([$select_year], $serviceProviderBindings));
+                    "));
                 $inclusionValue = $inclusion[0]->total_application_count;
 
                 //FSCR
                 $fscr = $this->fscr($select_year);
                 
                 // query to retrieve the total volume of sludge emptied,  where the application date year matches the selected year and optionally by service provider
-                $sludgeCount = DB::select("
+                $sludgeCount = DB::select(DB::raw("
                             SELECT
                                 SUM(volume_of_sludge) AS sCount
                             FROM
@@ -192,8 +185,8 @@ class KpiDashboardController extends Controller
                             LEFT JOIN
                                 fsm.applications as a ON a.id = emptyings.application_id
                             WHERE
-                                EXTRACT(YEAR FROM a.application_date) = ? and $whereServiceProviderID
-                        ", array_merge([$select_year], $serviceProviderBindings));
+                                EXTRACT(YEAR FROM a.application_date) = $select_year and $whereServiceProviderID
+                        "));
 
                 // Query to retrieve key performance indicators along with their targets for the selected year
                 $kpiResults = DB::table('fsm.key_performance_indicators AS i')->leftJoin('fsm.kpi_targets AS t', 'i.id', '=', 't.indicator_id')->select('i.indicator', 'i.id', 't.target', 't.year')->where('t.year', '=', $select_year)->whereNull('t.deleted_at')->orderBy('i.indicator')->get();
@@ -276,13 +269,11 @@ class KpiDashboardController extends Controller
                          's.id as sludge_collection_id',
                           'f.wear_ppe', 
                           'f.fsm_service_quality as quality')
-                          ->whereRaw($whereServiceProviderID, $serviceProviderBindings)
+                          ->whereRaw($whereServiceProviderID)
                           ->whereYear('application_date','=', $select_year)
-                          ->where(function ($query) use ($quarter) {
-                              $query->whereBetween('application_date', [$quarter->starttime, $quarter->endtime])
-                                  ->orWhereDate('application_date', '=', $quarter->starttime)
-                                  ->orWhereDate('application_date', '=', $quarter->endtime);
-                          })
+                          ->whereBetween('application_date', [$quarter->starttime, $quarter->endtime])
+                            ->orWhereDate('application_date', '=', $quarter->starttime)
+                            ->orWhereDate('application_date', '=', $quarter->endtime)
                     ->whereNull('a.deleted_at');
 
                      $base_query2 = clone $base_query1;
@@ -290,41 +281,41 @@ class KpiDashboardController extends Controller
 
                     //Response Time
                     // query to retrieve the average time between application date and emptied date  for each year,  where the application date year matches the specified quarter and optionally by service provider ID.
-                    $time = DB::select(" SELECT AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a
-                            JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE EXTRACT(YEAR FROM a.application_date) = ?
-                            AND ( (a.application_date BETWEEN ? AND ?)
-                                OR (DATE(a.application_date) = ?)
-                                OR  (DATE(a.application_date) = ?) )
+                    $time = DB::select(DB::raw(" SELECT AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a
+                            JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE EXTRACT(YEAR FROM a.application_date) = $select_year
+                            AND ( (a.application_date BETWEEN '$quarter->starttime' AND '$quarter->endtime')
+                                OR (DATE(a.application_date) = '$quarter->starttime')
+                                OR  (DATE(a.application_date) = '$quarter->endtime') )
                             AND $whereServiceProviderID
-                        ", array_merge([$select_year], [$quarter->starttime], [$quarter->endtime], [$quarter->starttime], [$quarter->endtime], $serviceProviderBindings));
+                        "));
                     $response = $time[0]->time;
 
                     //Inclusion
                      // query to retrieve the total application count for buildings within low-income communities,  where the application date year matches the specified quarter and optionally by service provider
-                    $inclusion = DB::select("SELECT SUM(application_count) AS total_application_count
+                    $inclusion = DB::select(DB::raw("SELECT SUM(application_count) AS total_application_count
                         FROM (SELECT COUNT(emptyings.application_id) AS application_count
                             FROM building_info.buildings AS buildings
                             JOIN  layer_info.low_income_communities AS communities
                             ON ST_Within(buildings.geom, communities.geom)
                             LEFT JOIN fsm.emptyings AS emptyings
-                            ON emptyings.application_id IN ( SELECT a.id FROM fsm.applications AS a WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = ? and $whereServiceProviderID  AND (
-                                (a.application_date BETWEEN ? AND ?)
-                                OR (DATE(a.application_date) = ?)
-                                OR (DATE(a.application_date) = ?)
-                            ))  GROUP BY buildings.geom) AS subquery", array_merge([$select_year], $serviceProviderBindings, [$quarter->starttime], [$quarter->endtime], [$quarter->starttime], [$quarter->endtime]));
+                            ON emptyings.application_id IN ( SELECT a.id FROM fsm.applications AS a WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = $select_year and $whereServiceProviderID  AND (
+                                (a.application_date BETWEEN '$quarter->starttime' AND '$quarter->endtime')
+                                OR (DATE(a.application_date) = '$quarter->starttime')
+                                OR (DATE(a.application_date) = '$quarter->endtime')
+                            ))  GROUP BY buildings.geom) AS subquery"));
                     $inclusionValue = $inclusion[0]->total_application_count;
 
                     //FSCR
                     $fscr = $this->fscr($select_year);
 
                     // query to retrieve the total volume of sludge emptied,  where the application date year matches  the specified quarter and optionally by service provider
-                    $sludgeCount = DB::select("SELECT SUM(volume_of_sludge) AS sCount
+                    $sludgeCount = DB::select(DB::raw("SELECT SUM(volume_of_sludge) AS sCount
                                     FROM fsm.emptyings  LEFT JOIN fsm.applications as a ON a.id = emptyings.application_id
-                                    WHERE  EXTRACT(YEAR FROM a.application_date) = ? and $whereServiceProviderID AND (
-                                    (a.application_date BETWEEN ? AND ?)
-                                                OR(DATE(a.application_date) = ?)
-                                                OR(DATE(a.application_date) = ?))
-                                    ", array_merge([$select_year], $serviceProviderBindings, [$quarter->starttime], [$quarter->endtime], [$quarter->starttime], [$quarter->endtime]));
+                                    WHERE  EXTRACT(YEAR FROM a.application_date) = $select_year and $whereServiceProviderID AND (
+                                    (a.application_date BETWEEN '$quarter->starttime' AND '$quarter->endtime')
+                                                OR(DATE(a.application_date) = '$quarter->starttime')
+                                                OR(DATE(a.application_date) = '$quarter->endtime'))
+                                    "));
                     $sludgeCount = $sludgeCount[0]->scount;
 
                     // Count the number of applications 
@@ -364,9 +355,9 @@ class KpiDashboardController extends Controller
 
                   // Query to retrieve key performance indicators along with their targets and quarter name for the selected year
                 $query = "SELECT t.target,q.quartername, k.indicator,q.quarterid FROM
-                fsm.kpi_targets t LEFT JOIN fsm.quarters q ON t.year = q.year LEFT JOIN fsm.key_performance_indicators k ON t.indicator_id = k.id WHERE t.year = ? AND t.deleted_at IS NULL ORDER BY  t.year, k.indicator,q.quarterid ; ";
+                fsm.kpi_targets t LEFT JOIN fsm.quarters q ON t.year = q.year LEFT JOIN fsm.key_performance_indicators k ON t.indicator_id = k.id WHERE t.year = $select_year AND t.deleted_at IS NULL ORDER BY  t.year, k.indicator,q.quarterid ; ";
         
-                $kpiResults = DB::select($query, [$select_year]);
+                $kpiResults = DB::select($query);
             
                 $keyPerformanceData = [];
                 foreach ($kpiResults as $result) 
@@ -446,24 +437,24 @@ class KpiDashboardController extends Controller
 
                         //Response Time
                         // query to retrieve the average time between application date and emptied date  for each year,  where the application date year matches the years and optionally by service provider ID.
-                        $response = DB::select(" SELECT  EXTRACT(YEAR FROM a.application_date) AS year, AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE EXTRACT (YEAR FROM a.application_date) = ? and $whereServiceProviderID GROUP BY year ", array_merge([$year], $serviceProviderBindings));
+                        $response = DB::select(DB::raw(" SELECT  EXTRACT(YEAR FROM a.application_date) AS year, AVG(AGE(e.emptied_date, a.application_date)) AS time FROM fsm.applications AS a JOIN fsm.emptyings AS e ON a.id = e.application_id WHERE EXTRACT (YEAR FROM a.application_date) = $year and $whereServiceProviderID GROUP BY year "));
                     
                         //Inclusion
                          // query to retrieve the total application count for buildings within low-income communities,  where the application date year matches the year and optionally by service provider
-                        $inclusion = DB::select("SELECT SUM(application_count) AS total_application_count
+                        $inclusion = DB::select(DB::raw("SELECT SUM(application_count) AS total_application_count
                             FROM (SELECT COUNT(emptyings.application_id) AS application_count FROM building_info.buildings AS buildings JOIN layer_info.low_income_communities AS communities
                             ON ST_Within(buildings.geom, communities.geom) LEFT JOIN
                             fsm.emptyings AS emptyings  ON emptyings.application_id IN ( SELECT a.id FROM fsm.applications AS a
-                                WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = ? and $whereServiceProviderID
-                            ) GROUP BY buildings.geom) AS subquery; ", array_merge([$year], $serviceProviderBindings));
+                                WHERE buildings.bin = a.bin and EXTRACT(year FROM a.application_date) = $year and $whereServiceProviderID
+                            ) GROUP BY buildings.geom) AS subquery; "));
                         $inclusionValue = $inclusion[0]->total_application_count;
 
                         //FSCR
                         $fscr = $this->fscr($year);
 
                         // query to retrieve the total volume of sludge emptied,  where the application date year matches the year and optionally by service provider
-                        $sludgeCount = DB::select(" SELECT SUM(volume_of_sludge) AS sCount  FROM fsm.emptyings LEFT JOIN fsm.applications as a ON a.id = emptyings.application_id
-                            WHERE EXTRACT(YEAR FROM a.application_date) = ?  and $whereServiceProviderID ", array_merge([$year], $serviceProviderBindings));
+                        $sludgeCount = DB::select(DB::raw(" SELECT SUM(volume_of_sludge) AS sCount  FROM fsm.emptyings LEFT JOIN fsm.applications as a ON a.id = emptyings.application_id
+                            WHERE EXTRACT(YEAR FROM a.application_date) = $year  and $whereServiceProviderID "));
                         $sludgeCount = $sludgeCount[0]->scount;
 
                         $yearlyCounts[$year] = [

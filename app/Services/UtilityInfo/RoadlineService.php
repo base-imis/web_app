@@ -115,7 +115,7 @@ class RoadlineService {
             $roadline->length = $data['length'] ? $data['length'] : null;
             $roadline->right_of_way = $data['right_of_way'] ? $data['right_of_way'] : null;
             $roadline->carrying_width = $data['carrying_width'] ? $data['carrying_width'] : null;
-            $roadline->geom = $data['geom'] ? \App\Support\GeometryValue::fromWkt($data['geom'], 4326, true, ['LINESTRING', 'MULTILINESTRING']) : null;
+            $roadline->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
             $roadline->save();
         }
         else{

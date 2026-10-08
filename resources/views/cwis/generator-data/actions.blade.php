@@ -1,3 +1,0 @@
-<button type="button" class="btn btn-info btn-sm mb-1" title="{{ __('Edit') }}" data-preview-action="edit" aria-label="{{ __('Edit') }} {{ $row['service_outcome'] }} {{ $row['year'] }}"><i class="fa fa-edit" aria-hidden="true"></i></button>
-<button type="button" class="btn btn-info btn-sm mb-1" title="{{ __('Approve') }}" data-preview-action="approve" aria-label="{{ __('Approve') }} {{ $row['service_outcome'] }} {{ $row['year'] }}"><i class="fa fa-check" aria-hidden="true"></i></button>
-<button type="button" class="btn btn-danger btn-sm mb-1" title="{{ __('Delete') }}" data-preview-action="delete" aria-label="{{ __('Delete') }} {{ $row['service_outcome'] }} {{ $row['year'] }}"><i class="fa fa-trash" aria-hidden="true"></i></button>

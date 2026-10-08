@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Http\Concerns;
 
-use Illuminate\Testing\TestResponse;
-
 trait UiVisibilityTestHelpers
 {
     /**
@@ -28,15 +26,5 @@ trait UiVisibilityTestHelpers
     protected function assertControlHidden($response, string $testId): void
     {
         $response->assertDontSee('data-testid="' . $testId . '"', false);
-    }
-
-    protected function assertStableElementIsVisible(TestResponse $response, string $id): void
-    {
-        $response->assertSee('id="'.$id.'"', false);
-    }
-
-    protected function assertStableElementIsNotVisible(TestResponse $response, string $id): void
-    {
-        $response->assertDontSee('id="'.$id.'"', false);
     }
 }

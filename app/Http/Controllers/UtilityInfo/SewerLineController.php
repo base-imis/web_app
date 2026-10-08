@@ -233,7 +233,7 @@ class SewerLineController extends Controller
             ]);
         }
 
-        $sewer->geom = \App\Support\GeometryValue::fromWkt($request->geom, null, false, ['LINESTRING', 'MULTILINESTRING']);
+        $sewer->geom = DB::raw("ST_GeomFromText('". $request->geom . "')");
         $sewer->length = $request->length;
         $sewer->save();
         return response()->json([

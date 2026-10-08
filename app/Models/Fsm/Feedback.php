@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Fsm\Application;
-use Illuminate\Support\Str;
 
 class Feedback extends Model
 {
@@ -20,21 +19,6 @@ class Feedback extends Model
      * @var String
      */
     protected $table= 'fsm.feedbacks';
-
-    /**
-     * Generate the public URL identifier for new feedback records.
-     *
-     * @return void
-     */
-    protected static function booted()
-    {
-        static::creating(function ($feedback) {
-            if (empty($feedback->public_id)) {
-                $feedback->public_id = (string) Str::uuid();
-            }
-        });
-    }
-
      /**
      * Get the application associated with the application.
      *

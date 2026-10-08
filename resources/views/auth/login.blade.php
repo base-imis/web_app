@@ -30,7 +30,7 @@
                 @endif
             @endif
 
-                    <form id="login-form" method="POST" action="{{ route('login.perform') }}">
+                    <form method="POST" action="{{ route('login.perform') }}">
                         @csrf
                         <div class="input-group mb-3">
                             <input type="username" class="form-control @error('username') is-invalid @enderror" name="username" value="{{ old('username') }}" required placeholder="Email or Username">
@@ -88,7 +88,7 @@
                         </div>
                         <div class="row justify-content-end">
                             <div class="col-12 "> <!-- Adjust the column width as needed -->
-                                <button id="login-submit" type="submit" class="btn btn-primary btn-block">Log In</button>
+                                <button type="submit" class="btn btn-primary btn-block">Log In</button>
                             </div>
                             <div class="col-12 mt-2 text-center">
                                 @if (Route::has('password.request'))

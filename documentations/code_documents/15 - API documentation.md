@@ -1,4 +1,4 @@
-Version: V1.1.0
+Version: V1.0.0
 
 # API Documentation
 
@@ -65,46 +65,6 @@ Error Response
 "message": "Email & Password does not match with our records."
 
 }
-
-#### Login Rate Limiting
-
-`POST /api/login` uses the named Laravel limiter `api-login`. The limiter is separate from the browser login limiter so API requests do not consume the browser login counter and browser requests do not consume the API counter.
-
-The API limiter evaluates three keys:
-
-| Limit | Default threshold | Key purpose |
-|---|---:|---|
-| Identity and IP | 5 attempts per 1 minute | Limits repeated attempts for one normalized email from one client IP |
-| IP only | 20 attempts per 1 minute | Prevents bypass by rotating email addresses from one client IP |
-| Identity only | 15 attempts per 15 minutes | Prevents bypass by attempting the same account from multiple client IPs |
-
-The email is trimmed, converted to lowercase, and hashed before it is used in a rate-limit key. Plain email addresses and passwords are not stored in the limiter key.
-
-When a client exceeds any applicable limit, the endpoint returns HTTP `429 Too Many Requests` with a `Retry-After` header.
-
-Rate-Limited Response
-
-```json
-{
-    "status": false,
-    "message": "Too many login attempts. Please try again in 60 seconds."
-}
-```
-
-The exact number of seconds is calculated from the active lockout and may differ from the example.
-
-Limit values are configured through `config/security.php` and the following environment variables:
-
-```dotenv
-LOGIN_RATE_LIMIT_IDENTITY_IP_ATTEMPTS=5
-LOGIN_RATE_LIMIT_IDENTITY_IP_DECAY_MINUTES=1
-LOGIN_RATE_LIMIT_IP_ATTEMPTS=20
-LOGIN_RATE_LIMIT_IP_DECAY_MINUTES=1
-LOGIN_RATE_LIMIT_IDENTITY_ATTEMPTS=15
-LOGIN_RATE_LIMIT_IDENTITY_DECAY_MINUTES=15
-```
-
-Only deployment-approved reverse proxies may be listed in `TRUSTED_PROXIES`. Wildcard proxy trust is rejected. Deployments with multiple application instances must use a shared cache such as Redis so every instance uses the same rate-limit counters.
 
 ### App Logout
 

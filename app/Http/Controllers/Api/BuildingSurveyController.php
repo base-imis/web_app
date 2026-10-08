@@ -228,7 +228,7 @@ class BuildingSurveyController extends Controller
                     $xml->load($kml);
                     $polygons = $xml->getElementsByTagName('Polygon');
                     if($polygons->length > 0) {
-                        $isValidKml = DB::select('SELECT ST_IsValid(ST_GeomFromKML(?)) AS status', [$this->innerHTML($polygons[0])]);
+                        $isValidKml = DB::select("SELECT ST_IsValid(ST_GeomFromKML('".$this->innerHTML($polygons[0])."')) AS status");
                         if ($isValidKml[0]->status){
                             $filename = $buildingSurvey->temp_building_code . '_' . $buildingSurvey->collected_date . '.kml';
                             $storeKml = $kml->storeAs('/public/building-survey-kml', $filename, 'local');
@@ -270,10 +270,9 @@ class BuildingSurveyController extends Controller
             if ($buildingSurvey){
                 $buildingSurvey->forceDelete();
             }
-            report($th);
             return response()->json([
                 'status' => false,
-                'message' => __('Unable to save the building survey. Please check the submitted data.')
+                'message' => $th->getMessage()
             ], 500);
         }
     }

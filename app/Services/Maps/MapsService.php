@@ -37,33 +37,6 @@ use App\Models\Fsm\TreatmentPlant;
 
 class MapsService {
 
-    // Identifiers are SQL structure; values below continue to use bindings.
-    private function validateExtentAttribute($table, $column): void
-    {
-        $attributes = [
-            'fsm.containments' => ['id'],
-            'building_info.buildings' => ['bin', 'house_number'],
-            'utility_info.roads' => ['code', 'gid'],
-            'utility_info.drains' => ['code', 'gid'],
-            'utility_info.sewers' => ['code', 'gid'],
-            'utility_info.water_supplys' => ['code', 'gid'],
-            'layer_info.low_income_communities' => ['id'],
-            'layer_info.wards' => ['ward', 'gid'],
-            'layer_info.ward_overlay' => ['ward', 'gid'],
-            'layer_info.places' => ['id', 'gid'],
-            'fsm.treatment_plants' => ['id'],
-            'public_health.waterborne_hotspots' => ['id'],
-            'public_health.water_samples' => ['id'],
-            'fsm.toilets' => ['id'],
-        ];
-        if (!is_string($table) || !is_string($column) ||
-            !in_array($column, $attributes[$table] ?? [], true)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'atrribute' => 'Unsupported map layer or attribute.',
-            ]);
-        }
-    }
-
     protected $session;
     protected $instance;
 
@@ -251,19 +224,18 @@ class MapsService {
      */
     public function containmentExtent($id, $value)
     {
-            $this->validateExtentAttribute('fsm.containments', $id);
             // Get the minimum X coordinate of the containment extent
-            $xmin = array_pluck(DB::select("select st_xmin(ST_Extent(geom)) from fsm.containments where " . $id . " = ?", [$value]), 'st_xmin')[0];
+            $xmin = array_pluck(DB::select(DB::raw("select st_xmin(ST_Extent(geom)) from fsm.containments where " . $id . " = '" . $value . "'")), 'st_xmin')[0];
             // Get the minimum Y coordinate of the containment extent
-            $ymin = array_pluck(DB::select("select st_ymin(ST_Extent(geom)) from fsm.containments where " . $id . " = ?", [$value]), 'st_ymin')[0];
+            $ymin = array_pluck(DB::select(DB::raw("select st_ymin(ST_Extent(geom)) from fsm.containments where " . $id . " = '" . $value . "'")), 'st_ymin')[0];
             // Get the maximum X coordinate of the containment extent
-            $xmax = array_pluck(DB::select("select st_xmax(ST_Extent(geom)) from fsm.containments where " . $id . " = ?", [$value]), 'st_xmax')[0];
+            $xmax = array_pluck(DB::select(DB::raw("select st_xmax(ST_Extent(geom)) from fsm.containments where " . $id . " = '" . $value . "'")), 'st_xmax')[0];
             // Get the maximum Y coordinate of the containment extent
-            $ymax = array_pluck(DB::select("select st_ymax(ST_Extent(geom)) from fsm.containments where " . $id . " = ?", [$value]), 'st_ymax')[0];
+            $ymax = array_pluck(DB::select(DB::raw("select st_ymax(ST_Extent(geom)) from fsm.containments where " . $id . " = '" . $value . "'")), 'st_ymax')[0];
 
              // Get the latitude and longitude of the centroid of the containment
-            $lat = array_pluck(DB::select("select ST_Y (ST_Transform (geom, 4326)) as lat from fsm.containments where " . $id . " = ?", [$value]), 'lat')[0];
-            $long = array_pluck(DB::select("select ST_X (ST_Transform (geom, 4326)) as long from fsm.containments where " . $id . " = ?", [$value]), 'long')[0];
+            $lat = array_pluck(DB::select(DB::raw("select ST_Y (ST_Transform (geom, 4326)) as lat from fsm.containments where " . $id . " = '" . $value . "'")), 'lat')[0];
+            $long = array_pluck(DB::select(DB::raw("select ST_X (ST_Transform (geom, 4326)) as long from fsm.containments where " . $id . " = '" . $value . "'")), 'long')[0];
 
                // Return an array containing the extent coordinates and centroid coordinates
             return array(
@@ -284,22 +256,21 @@ class MapsService {
      * @return array An array containing the extent (xmin, ymin, xmax, ymax) and centroid (lat, long) coordinates.
      */
     public function buildingExtent($bin, $value) {
-            $this->validateExtentAttribute('building_info.buildings', $bin);
 
 
             $val1 = "building_info.buildings";
              // Get the minimum X coordinate of the building extent
-            $xmin = array_pluck(DB::select("select st_xmin(ST_Extent(geom)) from building_info.buildings where " . $bin . " = ?", [$value]), 'st_xmin')[0];
+            $xmin = array_pluck(DB::select(DB::raw("select st_xmin(ST_Extent(geom)) from building_info.buildings where " . $bin . " = '" . $value . "'")), 'st_xmin')[0];
              // Get the minimum Y coordinate of the building extent
-            $ymin = array_pluck(DB::select("select st_ymin(ST_Extent(geom)) from building_info.buildings where " . $bin . " = ?", [$value]), 'st_ymin')[0];
+            $ymin = array_pluck(DB::select(DB::raw("select st_ymin(ST_Extent(geom)) from building_info.buildings where " . $bin . " = '" . $value . "'")), 'st_ymin')[0];
              // Get the maximum X coordinate of the building extent
-            $xmax = array_pluck(DB::select("select st_xmax(ST_Extent(geom)) from building_info.buildings where " . $bin . " = ?", [$value]), 'st_xmax')[0];
+            $xmax = array_pluck(DB::select(DB::raw("select st_xmax(ST_Extent(geom)) from building_info.buildings where " . $bin . " = '" . $value . "'")), 'st_xmax')[0];
              // Get the maximum Y coordinate of the building extent
-            $ymax = array_pluck(DB::select("select st_ymax(ST_Extent(geom)) from building_info.buildings where " . $bin . " = ?", [$value]), 'st_ymax')[0];
+            $ymax = array_pluck(DB::select(DB::raw("select st_ymax(ST_Extent(geom)) from building_info.buildings where " . $bin . " = '" . $value . "'")), 'st_ymax')[0];
 
             // Get the latitude and longitude of the centroid of the building
-            $lat = array_pluck(DB::select("select ST_Y (ST_Transform (ST_Centroid(geom), 4326)) as lat from building_info.buildings where " . $bin . " = ?", [$value]), 'lat')[0];
-            $long = array_pluck(DB::select("select ST_X (ST_Transform (ST_Centroid(geom), 4326)) as long from building_info.buildings where " . $bin . " = ?", [$value]), 'long')[0];
+            $lat = array_pluck(DB::select(DB::raw("select ST_Y (ST_Transform (ST_Centroid(geom), 4326)) as lat from building_info.buildings where " . $bin . " = '" . $value . "'")), 'lat')[0];
+            $long = array_pluck(DB::select(DB::raw("select ST_X (ST_Transform (ST_Centroid(geom), 4326)) as long from building_info.buildings where " . $bin . " = '" . $value . "'")), 'long')[0];
 
             // Return an array containing the extent coordinates and centroid coordinates
             return array(
@@ -324,21 +295,20 @@ class MapsService {
 
     public function lineStringExtent($layer, $code, $value) 
     {
-            $this->validateExtentAttribute($layer, $code);
            // Retrieve the minimum x-coordinate of the bounding box of the geometry
-            $xmin = array_pluck(DB::select("select st_xmin(ST_Extent(geom)) from " . $layer . " where " . $code . " = ?", [$value]), 'st_xmin')[0];
+            $xmin = array_pluck(DB::select(DB::raw("select st_xmin(ST_Extent(geom)) from " . $layer . " where " . $code . " = '" . $value . "'")), 'st_xmin')[0];
 
             // Retrieve the minimum y-coordinate of the bounding box of the geometry
-            $ymin = array_pluck(DB::select("select st_ymin(ST_Extent(geom)) from " . $layer . " where " . $code . " = ?", [$value]), 'st_ymin')[0];
+            $ymin = array_pluck(DB::select(DB::raw("select st_ymin(ST_Extent(geom)) from " . $layer . " where " . $code . " = '" . $value . "'")), 'st_ymin')[0];
 
             // Retrieve the maximum x-coordinate of the bounding box of the geometry
-            $xmax = array_pluck(DB::select("select st_xmax(ST_Extent(geom)) from " . $layer . " where " . $code . " = ?", [$value]), 'st_xmax')[0];
+            $xmax = array_pluck(DB::select(DB::raw("select st_xmax(ST_Extent(geom)) from " . $layer . " where " . $code . " = '" . $value . "'")), 'st_xmax')[0];
 
             // Retrieve the maximum y-coordinate of the bounding box of the geometry
-            $ymax = array_pluck(DB::select("select st_ymax(ST_Extent(geom)) from " . $layer . " where " . $code . " = ?", [$value]), 'st_ymax')[0];
+            $ymax = array_pluck(DB::select(DB::raw("select st_ymax(ST_Extent(geom)) from " . $layer . " where " . $code . " = '" . $value . "'")), 'st_ymax')[0];
 
             // Retrieve the geometry itself as a WKT (Well-Known Text) string
-            $geom = array_pluck(DB::select("select ST_AsText(geom) AS geom from " . $layer . " where " . $code . " = ?", [$value]), 'geom')[0];
+            $geom = array_pluck(DB::select(DB::raw("select ST_AsText(geom) AS geom from " . $layer . " where " . $code . " = '" . $value . "'")), 'geom')[0];
 
             // Return an array containing the bounding box coordinates and the geometry
             return array(
@@ -359,23 +329,21 @@ class MapsService {
      * @return array An array containing the extent (xmin, ymin, xmax, ymax) and centroid (lat, long) coordinates.
      */
     public function polygonExtent($layer, $id, $value) {
-            abort_unless($layer === 'low_income_communities_layer', 422, 'Unsupported map layer.');
-            $this->validateExtentAttribute('layer_info.low_income_communities', $id);
 
             if($layer == 'low_income_communities_layer' ){
             $val1 = "layer_info.low_income_communities";}
              // Get the minimum X coordinate of the building extent
-            $xmin = array_pluck(DB::select("select st_xmin(ST_Extent(geom)) from $val1 where " . $id . " = ?", [$value]), 'st_xmin')[0];
+            $xmin = array_pluck(DB::select(DB::raw("select st_xmin(ST_Extent(geom)) from $val1 where " . $id . " = '" . $value . "'")), 'st_xmin')[0];
              // Get the minimum Y coordinate of the building extent
-            $ymin = array_pluck(DB::select("select st_ymin(ST_Extent(geom)) from $val1 where " . $id . " = ?", [$value]), 'st_ymin')[0];
+            $ymin = array_pluck(DB::select(DB::raw("select st_ymin(ST_Extent(geom)) from $val1 where " . $id . " = '" . $value . "'")), 'st_ymin')[0];
              // Get the maximum X coordinate of the building extent
-            $xmax = array_pluck(DB::select("select st_xmax(ST_Extent(geom)) from $val1 where " . $id . " = ?", [$value]), 'st_xmax')[0];
+            $xmax = array_pluck(DB::select(DB::raw("select st_xmax(ST_Extent(geom)) from $val1 where " . $id . " = '" . $value . "'")), 'st_xmax')[0];
              // Get the maximum Y coordinate of the building extent
-            $ymax = array_pluck(DB::select("select st_ymax(ST_Extent(geom)) from $val1 where " . $id . " = ?", [$value]), 'st_ymax')[0];
+            $ymax = array_pluck(DB::select(DB::raw("select st_ymax(ST_Extent(geom)) from $val1 where " . $id . " = '" . $value . "'")), 'st_ymax')[0];
 
             // Get the latitude and longitude of the centroid of the building
-            $lat = array_pluck(DB::select("select ST_Y (ST_Transform (ST_Centroid(geom), 4326)) as lat from $val1 where " . $id . " = ?", [$value]), 'lat')[0];
-            $long = array_pluck(DB::select("select ST_X (ST_Transform (ST_Centroid(geom), 4326)) as long from $val1 where " . $id . " = ?", [$value]), 'long')[0];
+            $lat = array_pluck(DB::select(DB::raw("select ST_Y (ST_Transform (ST_Centroid(geom), 4326)) as lat from $val1 where " . $id . " = '" . $value . "'")), 'lat')[0];
+            $long = array_pluck(DB::select(DB::raw("select ST_X (ST_Transform (ST_Centroid(geom), 4326)) as long from $val1 where " . $id . " = '" . $value . "'")), 'long')[0];
 
             // Return an array containing the extent coordinates and centroid coordinates
             return array(
@@ -426,19 +394,18 @@ class MapsService {
      * @return array The extent of points represented as an associative array with keys 'xmin', 'ymin', 'xmax', 'ymax'.
      */
     public function pointsExtent($layer, $id, $value) {
-            $this->validateExtentAttribute($layer, $id);
 
            // Extracting the minimum x-coordinate of the bounding box of a geometry
-            $xmin = array_pluck(DB::select("select st_xmin(ST_Extent(geom)) from " . $layer . " where " . $id . " = ?", [$value]), 'st_xmin')[0];
+            $xmin = array_pluck(DB::select(DB::raw("select st_xmin(ST_Extent(geom)) from " . $layer . " where " . $id . " = '" . $value . "'")), 'st_xmin')[0];
 
             // Extracting the minimum y-coordinate of the bounding box of a geometry
-            $ymin = array_pluck(DB::select("select st_ymin(ST_Extent(geom)) from " . $layer . " where " . $id . " = ?", [$value]), 'st_ymin')[0];
+            $ymin = array_pluck(DB::select(DB::raw("select st_ymin(ST_Extent(geom)) from " . $layer . " where " . $id . " = '" . $value . "'")), 'st_ymin')[0];
 
             // Extracting the maximum x-coordinate of the bounding box of a geometry
-            $xmax = array_pluck(DB::select("select st_xmax(ST_Extent(geom)) from " . $layer . " where " . $id . " = ?", [$value]), 'st_xmax')[0];
+            $xmax = array_pluck(DB::select(DB::raw("select st_xmax(ST_Extent(geom)) from " . $layer . " where " . $id . " = '" . $value . "'")), 'st_xmax')[0];
 
             // Extracting the maximum y-coordinate of the bounding box of a geometry
-            $ymax = array_pluck(DB::select("select st_ymax(ST_Extent(geom)) from " . $layer . " where " . $id . " = ?", [$value]), 'st_ymax')[0];
+            $ymax = array_pluck(DB::select(DB::raw("select st_ymax(ST_Extent(geom)) from " . $layer . " where " . $id . " = '" . $value . "'")), 'st_ymax')[0];
 
             // Returning the extracted coordinates as an associative array
             return array(

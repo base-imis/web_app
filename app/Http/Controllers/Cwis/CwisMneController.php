@@ -111,10 +111,7 @@ class CwisMneController extends Controller
     public function cwis($year)
     {
 
-        $validated = validator(['year' => $year], [
-            'year' => ['required', 'integer'],
-        ])->validate();
-        $result = DB::select('select * from insert_data_into_cwis_table(?);', [$validated['year']]);
+        $result = DB::select(DB::raw('select * from insert_data_into_cwis_table(' . $year . ');'));
         return response()->json($result);
     }
     public function store(Request $request, cwis_mne $cwis_mne)
@@ -183,8 +180,6 @@ class CwisMneController extends Controller
 
     public function createIndex(Request $request)
     {
-        $validated = $request->validate(['year' => ['required', 'integer']]);
-        $year = $validated['year'];
 
         $currentYear = date('Y');
         $newsurveyear = cwis_mne::latest()->selectRaw("year + 1 as newyear")->limit(1)->get();
@@ -208,6 +203,8 @@ class CwisMneController extends Controller
 
         $disabledIndicators = [];
 
+        $year = $request->year;
+      
         $cwisResult = $this->cwis($year);
         $data = cwis_mne::where('year', $year)->pluck('data_value', 'indicator_code');
       

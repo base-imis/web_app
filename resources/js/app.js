@@ -15,7 +15,7 @@ import 'datatables.net-fixedcolumns-bs4/js/fixedColumns.bootstrap4.min.js';
 
 
 
-import 'swiper/bundle';
+import 'swiper/swiper-bundle.min.js';
 
 
 
@@ -25,7 +25,7 @@ window.datepicker = require('bootstrap-datepicker');
 window.select2 = require('select2');
 window.toastr = require('toastr');
 window.Swal = require('sweetalert2');
-window.bsCustomFileInput = require('bs-custom-file-input');
+window.bsCustomFileInput = require('admin-lte/plugins/bs-custom-file-input/bs-custom-file-input.min');
 window.chart = require('chart.js/dist/Chart.min.js');
 
 require('jquery-autocomplete');

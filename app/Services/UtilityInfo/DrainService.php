@@ -117,7 +117,7 @@ class DrainService {
             $drain->treatment_plant_id = $data['treatment_plant_id'] ? $data['treatment_plant_id'] : null;
             $drain->size = $data['size'] ? $data['size'] : null;
             $drain->length = $data['length'] ? $data['length'] : null;
-            $drain->geom = $data['geom'] ? \App\Support\GeometryValue::fromWkt($data['geom'], 4326, true, ['LINESTRING', 'MULTILINESTRING']) : null;
+            $drain->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
 
             $drain->save();
         }
