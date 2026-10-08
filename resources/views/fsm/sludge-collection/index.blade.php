@@ -260,12 +260,16 @@ $(function() {
         date_to = $('#date_to').val();
         application_id = $('#application_id').val();
         servprov = $('#servprov').val();
-        window.location.href = "{!! url('fsm/sludge-collection/export?searchData=') !!}" + searchData +
-            "&treatment_plant_id=" + treatment_plant_id +
-            "&date_from=" + date_from +
-            "&date_to=" + date_to +
-            "&application_id=" + application_id +
-            "&servprov=" + servprov;
+        window.globalLoader.download(
+            "{!! url('fsm/sludge-collection/export?searchData=') !!}" + searchData +
+                "&treatment_plant_id=" + treatment_plant_id +
+                "&date_from=" + date_from +
+                "&date_to=" + date_to +
+                "&application_id=" + application_id +
+                "&servprov=" + servprov,
+            'sludge-collections.csv',
+            this
+        ).catch(function () {});
     })
 
 

@@ -232,14 +232,17 @@ $(function() {
         var contact_person = $('#contact_person').val();
 
         var status = $('#status').val();
-        window.location.href = "{!! url('fsm/service-providers/export?searchData=') !!}" + searchData +
-            "&company_name=" + company_name +
-            "&ward=" + ward +
-            "&email=" + email +
-            "&company_location=" + company_location +
-            "&contact_person=" + contact_person +
-
-            "&status=" + status;
+        window.globalLoader.download(
+            "{!! url('fsm/service-providers/export?searchData=') !!}" + searchData +
+                "&company_name=" + company_name +
+                "&ward=" + ward +
+                "&email=" + email +
+                "&company_location=" + company_location +
+                "&contact_person=" + contact_person +
+                "&status=" + status,
+            'service-providers.csv',
+            this
+        ).catch(function () {});
     })
 });
 </script>
