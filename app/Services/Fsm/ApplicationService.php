@@ -824,22 +824,6 @@ class ApplicationService
                         selectValues: $selectValues,
                         selectedValue: old('desludging_vehicle_size', $application->desludging_vehicle_size),
                     ),
-                    new FormField(
-                        label: __('Supervisory Assessment Date'),
-                        labelFor: 'supervisory_assessment_date',
-                        inputType: 'date',
-                        inputId: 'supervisory_assessment_date',
-                        inputValue: $application->supervisory_assessment_date
-                            ? Carbon::parse(
-                                $application->supervisory_assessment_date
-                            )->format('Y-m-d')
-                            : null,
-                        required: true,
-                        disabled: $application->emptying_status
-                            ? true
-                            : false,
-                        placeholder: __('Supervisory Assessment Date'),
-                    ),
 
                     new FormField(
                         label: __('Service Provider Name'),
@@ -1371,7 +1355,6 @@ class ApplicationService
                         $application->applicant_contact = $request->customer_contact??$owner->owner_contact??null;
                         $application->applicant_gender = $request->customer_gender??$owner->owner_gender??null;
                     };
-                    $application->supervisory_assessment_date = $request->supervisory_assessment_date;
                     if (empty($application->desludging_vehicle_size) && !empty($application->service_provider_id)) {
                         $application->desludging_vehicle_size = VacutugType::where('service_provider_id', $application->service_provider_id)
                             ->whereNotNull('capacity')

@@ -77,7 +77,6 @@ class ApplicationRequest extends FormRequest
             'applicant_contact'           => 'required|integer|digits:10',
 
             'proposed_emptying_date'      => $isConfirm ? 'required|date|after_or_equal:today' : 'nullable',
-            'supervisory_assessment_date' => $isConfirm ? 'nullable|date|before_or_equal:proposed_emptying_date' : 'nullable',
             'service_provider_id'         => $isConfirm ? 'nullable|integer' : 'required|integer',
             'landmark'                    => 'nullable',
             'emergency_desludging_status' => 'nullable|boolean',
@@ -111,8 +110,6 @@ class ApplicationRequest extends FormRequest
             'applicant_contact.digits' => __('Please enter a valid 10-digit Applicant Contact Number.'),
             'proposed_emptying_date.required' => __('The Proposed Emptying Date is required.'),
             'proposed_emptying_date.after_or_equal' => __('The Proposed Emptying Date must be today or a future date.'),
-            'supervisory_assessment_date.date' => __('The Supervisory Assessment Date must be a valid date.'),
-            'supervisory_assessment_date.before_or_equal' => __('The Supervisory Assessment Date must be on or before the Proposed Emptying Date.'),
             'service_provider_id.required' => __('The Service Provider Name is required.'),
             'anf_ward.required' => __('The ANF Ward is required.'),
             'anf_locality.required' => __('The ANF Locality is required.'),
