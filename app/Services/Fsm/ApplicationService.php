@@ -39,7 +39,7 @@ use App\Models\Fsm\VacutugType;
 use App\Enums\ApplicationStatus;
 use App\Enums\FeedbackStatus;
 use App\Models\Fsm\Emptying;
-
+use App\Services\OneSignalService;
 
 class ApplicationService
 {
@@ -1457,7 +1457,15 @@ class ApplicationService
                             $etoUserIds   = array_values(array_unique($etoUserIds));
                         }
                     }
-                   
+
+                    // In-app notifications are available even without the optional push integration.
+                    if (!empty($etoUserIds) && class_exists(OneSignalService::class)) {
+                        app(OneSignalService::class)->sendToUsers(
+                            $etoUserIds,
+                            'New Application Assigned',
+                            $message
+                        );
+                    }
                 });
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Database error in application creation: ' . $e->getMessage());

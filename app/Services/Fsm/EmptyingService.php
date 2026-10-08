@@ -36,6 +36,7 @@ use DataTables;
 use Throwable;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\OneSignalService;
 
 class EmptyingService
 {
@@ -1480,8 +1481,8 @@ class EmptyingService
                 $emptying->total_time = $emptying->total_time + $this->sumHms($request->start_time,  $request->end_time) ?: null;
                 $emptying->volume_of_sludge = $emptying->volume_of_sludge + $request->volume_of_sludge;
             } else {
+
                 // Create the Emptying record
-                $data['trip_no'] = 0;
                 $emptying = Emptying::create($data);
                 $emptying->total_time = $this->sumHms($request->start_time, $request->end_time) ?: null;
 
@@ -1652,6 +1653,13 @@ $fstpUserIds = $fstpUsers
     ->values()
     ->all();
 
+if (!empty($fstpUserIds)) {
+    app(\App\Services\OneSignalService::class)->sendToUsers(
+        $fstpUserIds,
+        'Application Approaching FSTP',
+        $fstpMessage
+    );
+}
 
 $etoUserIds = DB::table('fsm.employees')
     ->where('service_provider_id', $emptying->service_provider_id)
@@ -1698,6 +1706,13 @@ foreach ($recipientIds as $userId) {
     ]);
 }
 
+if (!empty($recipientIds)) {
+    app(\App\Services\OneSignalService::class)->sendToUsers(
+        $recipientIds,
+        'Emptying Service Completed',
+        $emptyingMessage
+    );
+}
 });
             // ✅ SUCCESS RESPONSE
             if ($mode === 'api') {

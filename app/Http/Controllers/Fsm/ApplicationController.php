@@ -352,6 +352,14 @@ class ApplicationController extends Controller
 
         $etoUserIds = array_values(array_unique(array_merge($etoUserIds, $spUserIds)));
 
+        if (!empty($etoUserIds)) {
+            app(\App\Services\OneSignalService::class)->sendToUsers(
+                $etoUserIds,
+                'Application Scheduled',
+                $message
+            );
+        }
+
         return redirect()->route('application.index')->with('success', __('Emptying scheduled successfully.'));
     }
 
