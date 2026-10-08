@@ -23,7 +23,8 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             @endif
 
             <div class="float-right">
-                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#treatmentPlantModal" id="btnShowTP">
+                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#treatmentPlantModal"
+                    data-loader-ignore id="btnShowTP">
                     {{ __('Treatment Plant Capacity') }}
                 </button>
                 <a class="btn btn-info" id="headingOne" type="button" data-toggle="collapse"
@@ -282,6 +283,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 order: [[0, 'desc']]
             });
 
+            // DataTable action rows are rendered dynamically, so use a
+            // delegated handler that remains active after every redraw.
+            $(document).on('click', '#data-table .delete', function(e) {
+                e.preventDefault();
+                deleteAction($(this).closest('form')[0]);
+            });
+
             // 4. Form Actions (Filter & Reset)
             $('#filter-form').on('submit', function(e) {
                 e.preventDefault();
@@ -321,7 +329,11 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 var year_sel = localStorage.getItem('year_select') || $('#year_select').val();
                 var month_sel = localStorage.getItem('month_select') || $('#month_select').val();
                 if(!year_sel || !month_sel) return;
-                window.open(`application/pdf/${year_sel}/${month_sel}/monthly-report`, "Monthly Report");
+                window.globalLoader.download(
+                    `application/pdf/${year_sel}/${month_sel}/monthly-report`,
+                    'Monthly Report.pdf',
+                    this
+                ).catch(function () {});
             });
 
         });

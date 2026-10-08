@@ -46,6 +46,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
     }).then((result) => {
         if (result.isConfirmed) {
             // Redirect to route that deletes the entire application and related data
+            window.globalLoader.show(Swal.getConfirmButton());
             window.location.href = "{{ url('fsm/application') }}/{{ session('application_id') }}/force-delete";
         }
     });
