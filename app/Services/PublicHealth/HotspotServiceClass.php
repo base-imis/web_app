@@ -122,6 +122,7 @@ class HotspotServiceClass
 
             // Check if geom is provided in the request
             if (!empty($request->geom)) {
+                $geometry = \App\Support\GeometryValue::fromWkt($request->geom, 4326, true, ['POLYGON', 'MULTIPOLYGON']);
                 // Get city polygon geometry
                 $citypolygeom = DB::table('layer_info.citypolys')->where('id', 1)->value('geom');
                 $contains = DB::select(
@@ -133,13 +134,13 @@ class HotspotServiceClass
                 if (!empty($contains) && $contains === true) {
                     // Find the ward that intersects with the geom
                     $ward = DB::select("SELECT w.ward
-                        FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))
+                        FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText(?, 4326))
                         ORDER BY
-                            ST_Area(ST_Intersection(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))) DESC
-                        LIMIT 1");
+                            ST_Area(ST_Intersection(w.geom, ST_GeomFromText(?, 4326))) DESC
+                        LIMIT 1", [$request->geom, $request->geom]);
 
                     $Hotspots->ward = $ward[0]->ward;
-                    $Hotspots->geom = $request->geom ? DB::raw("ST_Multi(ST_GeomFromText('" . $request->geom . "', 4326))") : null;
+                    $Hotspots->geom = $geometry;
                     $Hotspots->save();
 
                     DB::commit(); // Commit the transaction
@@ -154,7 +155,8 @@ class HotspotServiceClass
             }
         } catch (\Exception $e) {
             DB::rollBack(); // Rollback in case of any exception
-            return redirect('publichealth/hotspots/create')->with('error', __('An error occurred') . ':' . $e->getMessage())->withInput();
+            report($e);
+            return redirect('publichealth/hotspots/create')->with('error', __('Unable to save hotspot. Please check the submitted data.'))->withInput();
         }
     }
 
@@ -200,6 +202,7 @@ class HotspotServiceClass
 
             // Check if 'geom' is provided in the request
             if (!empty($request->geom)) {
+                $geometry = \App\Support\GeometryValue::fromWkt($request->geom, 4326, true, ['POLYGON', 'MULTIPOLYGON']);
                 $citypolygeom = DB::table('layer_info.citypolys')->where('id', 1)->value('geom');
                 $contains = DB::select(
                     "SELECT ST_Contains(?, ST_GeomFromText(?, 4326)) as contains",
@@ -208,12 +211,12 @@ class HotspotServiceClass
 
                 if (!empty($contains) && $contains === true) {
                     $ward=DB::select("SELECT w.ward
-                    FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))
+                    FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText(?, 4326))
                      ORDER BY
-                        ST_Area(ST_Intersection(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))) DESC
-                    LIMIT 1");
+                        ST_Area(ST_Intersection(w.geom, ST_GeomFromText(?, 4326))) DESC
+                    LIMIT 1", [$request->geom, $request->geom]);
                     $Hotspots->ward = $ward[0]->ward;
-                    $Hotspots->geom = DB::raw("ST_Multi(ST_GeomFromText('" . $request->geom . "', 4326))");
+                    $Hotspots->geom = $geometry;
                     $Hotspots->save();
                 } else {
                     return redirect('publichealth/hotspots/' . $id . '/edit')->with('error', __('The selected area should be within the City Boundary.'))->withInput();

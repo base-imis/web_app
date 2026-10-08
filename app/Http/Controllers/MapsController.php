@@ -237,6 +237,12 @@ class MapsController extends Controller
 
     public function getExtent()
     {
+        abort_unless(in_array(request()->layer, [
+            'containments_layer', 'buildings_layer', 'low_income_communities_layer',
+            'roadlines_layer', 'drains_layer', 'sewerlines_layer', 'watersupply_network_layer',
+            'containment_surveys', 'wards_layer', 'ward_overlay', 'places_layer',
+            'treatmentplants_layer', 'waterborne_hotspots_layer', 'water_samples_layer', 'toilets_layer',
+        ], true), 422, 'Unsupported map layer.');
 
         $requestedLayer =  request()->layer;
         $atrribute = request()->atrribute;
@@ -855,6 +861,7 @@ class MapsController extends Controller
 
     public function searchAutoComplete()
     {
+        request()->validate(['layer' => ['nullable', 'string'], 'keywords' => ['nullable', 'string']]);
         $layer = request()->layer;
         $keywords = request()->keywords;
         // Trimming whitespace from the layer and keywords
@@ -865,18 +872,18 @@ class MapsController extends Controller
         if (in_array($layer, ['places_layer', 'roadlines_layer', 'house_number','bin']) && $keywords) {
             if ($layer == 'places_layer') {
                 // Querying the database for places matching the provided keywords
-                $results = array_pluck(DB::select("SELECT DISTINCT name FROM layer_info.places WHERE deleted_at is null AND LOWER(name) LIKE LOWER('%" . $keywords . "%') AND geom IS NOT NULL LIMIT 10"), 'name');
+                $results = array_pluck(DB::select('SELECT DISTINCT name FROM layer_info.places WHERE deleted_at is null AND LOWER(name) LIKE LOWER(?) AND geom IS NOT NULL LIMIT 10', ['%' . $keywords . '%']), 'name');
             } else if ($layer == 'roadlines_layer') {
                  // Querying the database for roadlines matching the provided keywords
-                $results = array_pluck(DB::select("SELECT DISTINCT name FROM utility_info.roads WHERE deleted_at is null AND LOWER(name) LIKE LOWER('%" . $keywords . "%') AND geom IS NOT NULL LIMIT 10"), 'name');
+                $results = array_pluck(DB::select('SELECT DISTINCT name FROM utility_info.roads WHERE deleted_at is null AND LOWER(name) LIKE LOWER(?) AND geom IS NOT NULL LIMIT 10', ['%' . $keywords . '%']), 'name');
             }
             else if ($layer == 'house_number') {
                 // Querying the database for house address matching the provided keywords
-               $results = array_pluck(DB::select("SELECT house_number FROM building_info.buildings WHERE deleted_at is null AND LOWER(house_number) LIKE LOWER('%" . $keywords . "%') AND geom IS NOT NULL LIMIT 10"), 'house_number');
+               $results = array_pluck(DB::select('SELECT house_number FROM building_info.buildings WHERE deleted_at is null AND LOWER(house_number) LIKE LOWER(?) AND geom IS NOT NULL LIMIT 10', ['%' . $keywords . '%']), 'house_number');
            }
            else if ($layer == 'bin') {
             // Querying the database for house address matching the provided keywords
-           $results = array_pluck(DB::select("SELECT bin FROM building_info.buildings WHERE deleted_at is null AND LOWER(bin) LIKE LOWER('%" . $keywords . "%') AND geom IS NOT NULL LIMIT 10"), 'bin');
+           $results = array_pluck(DB::select('SELECT bin FROM building_info.buildings WHERE deleted_at is null AND LOWER(bin) LIKE LOWER(?) AND geom IS NOT NULL LIMIT 10', ['%' . $keywords . '%']), 'bin');
        }
 
         }

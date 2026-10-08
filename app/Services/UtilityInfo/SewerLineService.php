@@ -120,7 +120,7 @@ class SewerLineService {
             $sewerLine->location = $data['location'] ? $data['location'] : null;
             $sewerLine->diameter = $data['diameter'] ? $data['diameter'] : null;
             $sewerLine->treatment_plant_id = $data['treatment_plant_id'] ? $data['treatment_plant_id'] : null;
-            $sewerLine->geom = $data['geom'] ? DB::raw("ST_Multi(ST_GeomFromText('" . $data['geom'] . "', 4326))") : null;
+            $sewerLine->geom = $data['geom'] ? \App\Support\GeometryValue::fromWkt($data['geom'], 4326, true, ['LINESTRING', 'MULTILINESTRING']) : null;
 
             $sewerLine->save();
         }

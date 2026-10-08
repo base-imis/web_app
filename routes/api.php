@@ -45,8 +45,8 @@ use Illuminate\Support\Facades\Route;
 | An API route for logging in to the application.
 |
 */
-Route::get('get-Building-sewercode/{sewercode}',[BuildingSearchController::class,'getSewerCode']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:api-login');
 
 /*
 |
@@ -150,7 +150,6 @@ Route::group([
         Route::get('get-Building-sewercode/{sewercode}',[BuildingSearchController::class,'getSewerCode']);
         Route::get('get-Building-preconnected/{housenumber}',[BuildingSearchController::class,'getBinOfPreconnectedBuilding']);
         Route::get('get-Building-sanitation/{sanitation}',[BuildingSearchController::class,'getSanitationSystem']);
-        Route::get('get-Building-housenumber/{housenumber}',[BuildingSearchController::class,'getBuildingHouseNumber']);
 
         });
 

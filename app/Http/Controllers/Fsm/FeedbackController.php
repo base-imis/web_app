@@ -63,7 +63,7 @@ class FeedbackController extends Controller{
             $feedbacksData = DB::table('fsm.feedbacks AS f')
             ->join('auth.users AS u', 'f.user_id', '=', 'u.id')
             ->join('fsm.applications AS a', 'f.application_id', '=', 'a.id')
-            ->select('f.created_at','f.id','f.application_id', 'u.username', 'a.ward')
+            ->select('f.created_at','f.id','f.public_id','f.application_id', 'u.username', 'a.ward')
             ->whereNull('f.deleted_at')
            ->where('a.service_provider_id','=',Auth::user()->service_provider_id);
            
@@ -72,7 +72,7 @@ class FeedbackController extends Controller{
         {
             $feedbacksData = DB::table('fsm.feedbacks AS f')
             ->join('fsm.applications AS a', 'f.application_id', '=', 'a.id')
-            ->select('f.created_at','f.id','f.application_id', 'a.ward')
+            ->select('f.created_at','f.id','f.public_id','f.application_id', 'a.ward')
             ->whereNull('f.deleted_at');
         }
 
@@ -104,10 +104,10 @@ class FeedbackController extends Controller{
             ->addColumn('action', function ($model) {
                 $application = Application::find($model->application_id);
                 
-                $content = \Form::open(['method' => 'DELETE', 'route' => ['feedback.destroy', $model->id]]);
+                $content = \Form::open(['method' => 'DELETE', 'route' => ['feedback.destroy', $model->public_id]]);
 
                 if (Auth::user()->can('View Feedback')) {
-                    $content .= '<a title="' . __("Detail") . '" href="' . action("Fsm\FeedbackController@show", [$model->id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
+                    $content .= '<a title="' . __("Detail") . '" href="' . action("Fsm\FeedbackController@show", [$model->public_id]) . '" class="btn btn-info btn-sm mb-1"><i class="fa fa-list"></i></a> ';
                 }
                 if (Auth::user()->can('Delete Feedback')) {
                     $content .= '<a title="' . __("Delete") . '" class="delete btn btn-danger btn-sm mb-1"><i class="fa fa-trash"></i></a> ';
@@ -138,9 +138,9 @@ class FeedbackController extends Controller{
     * @param  int  $id The ID of the feedback.
     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory The view to display the feedback details.
     */
-    public function show($id)
+    public function show($feedbackPublicId)
     {
-        $feedback = Feedback::find($id);
+        $feedback = $this->findByPublicId($feedbackPublicId);
         if ($feedback) {
             $page_title = __("Feedback Details");
             return view('fsm.feedbacks.show', compact('page_title', 'feedback'));
@@ -176,9 +176,9 @@ class FeedbackController extends Controller{
     * @param  int  $id The ID of the feedback.
     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory The view to edit the feedback details.
     */
-    public function edit($id)
+    public function edit($feedbackPublicId)
     {
-        $feedback = Feedback::find($id);
+        $feedback = $this->findByPublicId($feedbackPublicId);
         if(Auth::user()->hasRole('Municipality - Help Desk') || Auth::user()->hasRole('Service Provider - Help Desk')) {
             if($feedback->user_id != Auth::user()->id) {
                 return redirect('fsm/application')->with('error',__('Cannot update Feedback not created by current User.'));
@@ -207,10 +207,10 @@ class FeedbackController extends Controller{
     * @param  int  $id The ID of the feedback to update.
     * @return \Illuminate\Http\RedirectResponse A redirect response after updating the feedback.
     */
-    public function update(FeedbackRequest $request, $id)
+    public function update(FeedbackRequest $request, $feedbackPublicId)
     {
 
-        $feedback = Feedback::find($id);
+        $feedback = $this->findByPublicId($feedbackPublicId);
         $application = Application::find($feedback->application_id);
         $feedback->application_id = $request->application_id? $request->application_id : null;
         $feedback->customer_name = $request->customer_name ? $request->customer_name : null;
@@ -265,9 +265,9 @@ class FeedbackController extends Controller{
     * @param  int  $id The ID of the feedback to be deleted.
     * @return \Illuminate\Http\RedirectResponse A redirect response after deleting the feedback.
     */
-    public function destroy($id)
+    public function destroy($feedbackPublicId)
     {
-        $feedback = Feedback::find($id);
+        $feedback = $this->findByPublicId($feedbackPublicId);
         $application_id = $feedback->application_id;
         if ($feedback) {
             if(Auth::user()->hasRole('Municipality - Help Desk') || Auth::user()->hasRole('Service Provider - Help Desk')) {
@@ -361,7 +361,16 @@ class FeedbackController extends Controller{
         $writer->close();
     }
 
-
+    /**
+     * Resolve feedback records from public URL identifiers.
+     *
+     * @param string $publicId
+     * @return Feedback
+     */
+    private function findByPublicId($publicId)
+    {
+        return Feedback::where('public_id', $publicId)->firstOrFail();
+    }
 
 
 

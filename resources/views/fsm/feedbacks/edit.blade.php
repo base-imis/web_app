@@ -10,7 +10,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 <div class="card card-info">
     <div class="form-horizontal">
 
-	{!! Form::model($feedback, ['method' => 'PATCH', 'action' => ['Fsm\FeedbackController@update', $feedback->id], 'class' => 'form-horizontal']) !!}
+	{!! Form::model($feedback, ['method' => 'PATCH', 'action' => ['Fsm\FeedbackController@update', $feedback->public_id], 'class' => 'form-horizontal']) !!}
         <div class="card-body">
             <div class="form-group row">
                 {!! Form::label('application_id', __('Application ID'),['class' => 'col-sm-3 control-label']) !!}

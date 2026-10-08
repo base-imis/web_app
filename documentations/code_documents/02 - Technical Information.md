@@ -1,4 +1,4 @@
-Version: V1.0.0
+Version: V1.1.0
 
 # Technical Information
 
@@ -91,9 +91,24 @@ Here, ‘storagedisk’ is the storage name. And ‘root’ has a path where the
 
 ## Laravel Web App Session and Cookies
 
-When a user login normally, session expires in two hours for now. It can be changed via .env file with SESSION_LIFETIME variable.
+When a user logs in normally, the session currently expires after two hours. This can be changed through the `SESSION_LIFETIME` environment variable.
 
-When a user login with remember me, session will be stored in cookie and it will expire when cookie expires. For now, cookie expiry time is 3 days. It can also be changed via .env file with REMEMBER_ME variable.
+When a user selects Remember Me, the login state is stored through the application's remember cookie. Its configured expiry is currently three days and can be changed through the `REMEMBER_ME` environment variable.
+
+### Login Submission State
+
+The browser login form is located at `resources/views/auth/login.blade.php`.
+
+After the browser validates the required fields and the form is submitted:
+
+- The login button is disabled.
+- A spinner is displayed.
+- The button label changes from `Log In` to `Signing in...`.
+- The button receives `aria-busy="true"`.
+- A second submission from the same form is prevented while the first request is in progress.
+- The original button state is restored when the browser returns to the page through Back or Forward navigation.
+
+This is a user-interface and duplicate-submission control. It does not replace server-side authentication, authorization, validation, or rate limiting. The related security controls are documented in `22 - Authentication and Web Security.md`.
 
 ## NPM Package Manager
 
@@ -124,6 +139,20 @@ There are three main layouts used in the system, one each for the landing page, 
 -   The landing page is stored in views/landingpage.blade.php.
 -   The dashboard is stored in views/layouts/dashboard.blade.php. The dashboard layout includes the header, sidebar, toast-message and footer stored in /includes/.
 -   The map interface is stored in view/layouts/maps.blade.php.
+
+### Dashboard Asynchronous Content
+
+The main IMIS, Building, and Utility dashboards return a lightweight shell before requesting their full dashboard content. The shared content loader is located at `resources/views/dashboard/_asyncDashboardLoader.blade.php`.
+
+The main dashboard shell is `resources/views/dashboard/indexAdmin.blade.php`, and the main dashboard body is `resources/views/dashboard/_content.blade.php`. Building and Utility use their own shell and content views.
+
+The main dashboard uses authorization-scoped server caching through `app/Services/DashboardService.php`. Building and Utility currently use asynchronous loading without the main dashboard's HTML cache. Complete dashboard routes, cache boundaries, invalidation behavior, frontend loading, tests, and deployment requirements are documented in `03 - Dashboard.md`.
+
+Dashboard navigation links marked with `data-dashboard-navigation` show a loader only on the selected item. Repeated mouse and keyboard activation of that item is blocked until navigation completes or the page state is restored.
+
+### Shared Cache Requirement
+
+Deployments with more than one application instance must use a shared Laravel cache driver such as Redis. This keeps dashboard namespace versions, cache refresh locks, and authentication rate limits consistent across servers. File cache must not be used as a distributed cache between separate application instances.
 
 ### General Layout
 

@@ -486,8 +486,8 @@ class SludgeCollectionController extends Controller
             $appId = $sludgeCollectionLog->application_id;
 
             $sludgeCollection = SludgeCollection::where('application_id', $appId)->first();
-sfasdasdasdasdasdasfasasdsadasd   
-            if ($sludgeCollection) {            sfasdasdasdasdasdasfasasdsadasd   
+
+            if ($sludgeCollection) {
                 // Update existing
                 $sludgeCollection->volume_of_sludge =
                     $sludgeCollection->volume_of_sludge + $request->volume_of_sludge;

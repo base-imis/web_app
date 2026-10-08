@@ -60,7 +60,9 @@ Route::group(['middleware' => ['guest']], function () {
      * Login Routes
      */
     Route::get('/login', 'Auth\LoginController@show')->name('login.show');
-    Route::post('/login', 'Auth\LoginController@login')->name('login.perform');
+    Route::post('/login', 'Auth\LoginController@login')
+        ->middleware('throttle:web-login')
+        ->name('login.perform');
 
     // Password Reset Routes...
     Route::get('password/reset', 'Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
@@ -486,7 +488,7 @@ Route::group([
     Route::get('feedback/export', 'FeedbackController@export');
     Route::get('feedback/editFeedback/{id}', 'FeedbackController@createFeedback')->name('feedback.create-Feedback');
 
-    Route::resource('feedback', 'FeedbackController');
+    Route::resource('feedback', 'FeedbackController')->parameters(['feedback' => 'feedback_public_id']);
 
     /**
      * Sludge Collection Routes
@@ -521,6 +523,10 @@ Route::group([
     /**
      * CWIS Routes
      */
+    Route::get('generator-data', 'CwisGeneratorDataController@index')->name('cwis.generator-data.index');
+    Route::get('generator-data/create', 'CwisGeneratorDataController@create')->name('cwis.generator-data.create');
+    Route::post('generator-data', 'CwisGeneratorDataController@store')->name('cwis.generator-data.store');
+    Route::get('generator-data/data', 'CwisGeneratorDataController@getData')->name('cwis.generator-data.data');
     Route::get('cwis-df-mne/newsurvey', 'CwisMneController@createIndex');
     Route::post('cwis-df-mne/newsurvey', 'CwisMneController@createStore');
     Route::get('cwis-df-mne/export-mne-csv', 'CwisMneController@exportMneCsv');

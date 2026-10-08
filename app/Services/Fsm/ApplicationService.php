@@ -1196,7 +1196,7 @@ class ApplicationService
                 } else if ($model->feedback_status == 1) {
                     if (Auth::user()->can('View Feedback')) {
                         $content .= '<a title="' . __("Feedback Details") . '" href="'
-                            . action("Fsm\FeedbackController@show", [$model->feedback->id])
+                            . action("Fsm\FeedbackController@show", [$model->feedback->public_id])
                             . '" class="btn btn-info btn-sm mb-1'
                             . (($model->sludge_collection_status == 1 || $model->sludge_collection_status == 2) ? '' : ' anchor-disabled')
                             . '"><i class="fa fa-pencil"></i></a> ';
@@ -1458,7 +1458,8 @@ class ApplicationService
                         }
                     }
 
-                    if (!empty($etoUserIds)) {
+                    // In-app notifications are available even without the optional push integration.
+                    if (!empty($etoUserIds) && class_exists(OneSignalService::class)) {
                         app(OneSignalService::class)->sendToUsers(
                             $etoUserIds,
                             'New Application Assigned',

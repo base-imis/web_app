@@ -244,7 +244,7 @@ class DrainController extends Controller
             ]);
         }
 
-        $drain->geom = DB::raw("ST_GeomFromText('". $request->geom . "')");
+        $drain->geom = \App\Support\GeometryValue::fromWkt($request->geom, null, false, ['LINESTRING', 'MULTILINESTRING']);
         $drain->length = $request->length;
         $drain->save();
 

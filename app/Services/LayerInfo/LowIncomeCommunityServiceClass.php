@@ -87,6 +87,7 @@ class LowIncomeCommunityServiceClass
     $lic->no_of_community_toilets = $request->no_of_community_toilets;
 
     // Retrieve the municipality boundary geometry
+    $geometry = \App\Support\GeometryValue::fromWkt($request->geom, 4326, true, ['POLYGON', 'MULTIPOLYGON']);
     $citypolygeom = DB::table('layer_info.citypolys')->where('id', 1)->value('geom');
 
     // Check if the geom is within the municipality boundary
@@ -99,13 +100,13 @@ class LowIncomeCommunityServiceClass
         // Find the ward for the geometry if it's inside the boundary
         $ward = DB::select("SELECT w.ward
             FROM layer_info.wards w
-            WHERE ST_Intersects(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))
-            ORDER BY ST_Area(ST_Intersection(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))) DESC
-            LIMIT 1");
+            WHERE ST_Intersects(w.geom, ST_GeomFromText(?, 4326))
+            ORDER BY ST_Area(ST_Intersection(w.geom, ST_GeomFromText(?, 4326))) DESC
+            LIMIT 1", [$request->geom, $request->geom]);
 
         // If a ward is found, save the geometry
         if (!empty($ward)) {
-            $lic->geom = DB::raw("ST_Multi(ST_GeomFromText('" . $request->geom . "', 4326))");
+            $lic->geom = $geometry;
             $lic->save();
             return redirect('layer-info/low-income-communities')->with('success', __('Low Income Community added successfully.'));
         } else {
@@ -151,6 +152,7 @@ class LowIncomeCommunityServiceClass
 
             // Check if 'geom' is provided in the request
             if (!empty($request->geom)) {
+                $geometry = \App\Support\GeometryValue::fromWkt($request->geom, 4326, true, ['POLYGON', 'MULTIPOLYGON']);
                 $citypolygeom = DB::table('layer_info.citypolys')->where('id', 1)->value('geom');
                 $contains = DB::select(
                     "SELECT ST_Contains(?, ST_GeomFromText(?, 4326)) as contains",
@@ -159,11 +161,11 @@ class LowIncomeCommunityServiceClass
 
                 if (!empty($contains) && $contains === true) {
                     $ward = DB::select("SELECT w.ward
-                        FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))
+                        FROM layer_info.wards w, ST_Intersects(w.geom, ST_GeomFromText(?, 4326))
                         ORDER BY
-                            ST_Area(ST_Intersection(w.geom, ST_GeomFromText('" . $request->geom . "', 4326))) DESC
-                        LIMIT 1");
-                    $lic->geom = DB::raw("ST_Multi(ST_GeomFromText('" . $request->geom . "', 4326))");
+                            ST_Area(ST_Intersection(w.geom, ST_GeomFromText(?, 4326))) DESC
+                        LIMIT 1", [$request->geom, $request->geom]);
+                    $lic->geom = $geometry;
                     $lic->save();
                 } else {
                     // Retain input on error

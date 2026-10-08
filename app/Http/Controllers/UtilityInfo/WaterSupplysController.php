@@ -223,7 +223,7 @@ class WaterSupplysController extends Controller
             ]);
         }
 
-        $watersupply->geom = DB::raw("ST_GeomFromText('". $request->geom . "')");
+        $watersupply->geom = \App\Support\GeometryValue::fromWkt($request->geom, null, false, ['LINESTRING', 'MULTILINESTRING']);
         $watersupply->length = $request->length;
         $watersupply->save();
 
