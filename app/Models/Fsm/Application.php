@@ -35,8 +35,8 @@ class Application extends Model
      * @var array
      */
     protected $casts = [
-        'sludge_collection_status' => 'boolean',
-        'emptying_status' => 'boolean',
+        'sludge_collection_status' => 'integer',
+        'emptying_status' => 'integer',
         'is_anf' => 'boolean',
     ];
 
