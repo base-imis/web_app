@@ -517,54 +517,85 @@ class ApplicationService
      */
     public function getShowFormFields($application)
     {
-        $address = Application::select('building_info.buildings.house_number AS house_address')
-            ->leftJoin('building_info.buildings', 'building_info.buildings.bin', '=', 'applications.bin')
-            ->where('applications.bin', $application->bin)
-            ->first();
+        $isAnf = (bool) $application->is_anf;
+        $address = $isAnf
+            ? null
+            : Application::select('building_info.buildings.house_number AS house_address')
+                ->leftJoin('building_info.buildings', 'building_info.buildings.bin', '=', 'applications.bin')
+                ->where('applications.bin', $application->bin)
+                ->first();
+
+        $addressFields = $isAnf
+            ? [
+                new FormField(
+                    label: __('Ward Number'),
+                    labelFor: 'anf_ward',
+                    inputType: 'label',
+                    inputId: 'anf_ward',
+                    labelValue: $application->ward ?? '-'
+                ),
+                new FormField(
+                    label: __('Locality Name'),
+                    labelFor: 'anf_locality',
+                    inputType: 'label',
+                    inputId: 'anf_locality',
+                    labelValue: $application->anf_locality ?? '-'
+                ),
+                new FormField(
+                    label: __('Nearest Landmark'),
+                    labelFor: 'anf_nearest_locality',
+                    inputType: 'label',
+                    inputId: 'anf_nearest_locality',
+                    labelValue: $application->anf_nearest_locality ?? '-'
+                ),
+            ]
+            : [
+                new FormField(
+                    label: __('Street Name / Street Code'),
+                    labelFor: 'road_code',
+                    inputType: 'label',
+                    inputId: 'road_code',
+                    labelValue: $application->road_code ?? '-'
+                ),
+                new FormField(
+                    label: __('BIN'),
+                    labelFor: 'bin',
+                    inputType: 'label',
+                    inputId: 'bin',
+                    labelValue: $application->bin ?? '-'
+                ),
+                new FormField(
+                    label: __('House Number'),
+                    labelFor: 'house_address',
+                    inputType: 'label',
+                    inputId: 'house_address',
+                    labelValue: $address?->house_address ?? '-'
+                ),
+                new FormField(
+                    label: __('Containment ID'),
+                    labelFor: 'containment_id',
+                    inputType: 'label',
+                    inputId: 'containment_id',
+                    labelValue: $application->containment_id ?? '-'
+                ),
+                new FormField(
+                    label: __('Ward Number'),
+                    labelFor: 'ward',
+                    inputType: 'label',
+                    inputId: 'ward',
+                    labelValue: $application->ward ?? '-'
+                ),
+            ];
 
         $this->showFormFields = [
             [
-                "title" => __('Address'),
-                "fields" => [
-                    new FormField(
-                        label: __('Street Name / Street Code'),
-                        labelFor: 'road_code',
-                        inputType: 'label',
-                        inputId: 'road_code',
-                        labelValue: $application->road_code ?? __('Street Name / Street Code'),
-
-                    ),
-                    new FormField(
-                        label: __('BIN'),
-                        labelFor: 'bin',
-                        inputType: 'label',
-                        inputId: 'bin',
-                        labelValue: $application->bin ?? __('BIN'),
-                    ),
-                    new FormField(
-                        label: __('House Number'),
-                        labelFor: 'house_address',
-                        inputType: 'label',
-                        inputId: 'house_address',
-                        labelValue: $address->house_address ?? __('House Number')
-                    ),
-                    new FormField(
-                        label: __('Containment ID'),
-                        labelFor: 'containment_id',
-                        inputType: 'label',
-                        inputId: 'containment_id',
-                        labelValue: $application->containment_id ?? __('Containment ID'),
-                    ),
-                    new FormField(
-                        label: __('Ward Number'),
-                        labelFor: 'ward',
-                        inputType: 'label',
-                        inputId: 'ward',
-                        labelValue: $application->ward  ?? __('Ward Number'),
-                    ),
-                ]
+                "title" => $isAnf ? __('Address (House Number Unknown)') : __('Address'),
+                "fields" => $addressFields,
             ],
-            [
+        ];
+
+        if (!$isAnf) {
+            $this->showFormFields[] = [
                 "title" => __("Owner Details"),
                 "fields" => [
                     new FormField(
@@ -589,9 +620,11 @@ class ApplicationService
                         labelValue: $application->customer_contact ?? __('Owner Contact (Phone)'),
 
                     ),
-                ]
-            ],
-            [
+                ],
+            ];
+        }
+
+        $this->showFormFields[] = [
                 "title" => __("Applicant Details"),
                 "fields" => [
                     new FormField(
@@ -615,10 +648,10 @@ class ApplicationService
                         inputId: 'applicant_contact',
                         labelValue: $application->applicant_contact ?? __('Applicant Contact (Phone)'),
                     ),
-                ]
-            ],
+                ],
+            ];
 
-            [
+        $this->showFormFields[] = [
                 "title" => __("Service Provider Details"),
                 "fields" => [
                     new FormField(
@@ -636,9 +669,8 @@ class ApplicationService
                         inputId: 'service_provider_id',
                         labelValue: $application->service_provider ? $application->service_provider()->withTrashed()->first()->company_name : 'Not Assigned',
                     ),
-                ]
-            ],
-        ];
+                ],
+            ];
 
         return $this->showFormFields;
     }
@@ -652,6 +684,7 @@ class ApplicationService
     {
         // Load service provider relation if not already loaded
         $application->loadMissing('service_provider');
+        $isAnf = (bool) $application->is_anf;
 
         // If emptying_status true => include trashed, else only operational
         if ($application->emptying_status) {
@@ -668,10 +701,12 @@ class ApplicationService
             ->mapWithKeys(fn($c) => [(string)$c => "$c m³"])
             ->toArray();
 
-        $address = Application::select('building_info.buildings.house_number AS house_address')
-            ->leftJoin('building_info.buildings', 'building_info.buildings.bin', '=', 'applications.bin')
-            ->where('applications.bin', $application->bin)
-            ->first();
+        $address = $isAnf
+            ? null
+            : Application::select('building_info.buildings.house_number AS house_address')
+                ->leftJoin('building_info.buildings', 'building_info.buildings.bin', '=', 'applications.bin')
+                ->where('applications.bin', $application->bin)
+                ->first();
 
         // Initial provider list based on saved size (this is what you will swap via JS on change)
         $serviceProviders = ServiceProviderSequence::where('desludging_vehicle_size', $application->desludging_vehicle_size)
@@ -696,52 +731,87 @@ class ApplicationService
             }
         }
 
+        $addressFields = $isAnf
+            ? [
+                new FormField(
+                    label: __('Ward Number'),
+                    labelFor: 'anf_ward',
+                    inputType: 'select',
+                    inputId: 'anf_ward',
+                    selectValues: Ward::orderBy('ward')->pluck('ward', 'ward')->toArray(),
+                    selectedValue: old('anf_ward', $application->ward),
+                    required: true,
+                    placeholder: __('Ward Number')
+                ),
+                new FormField(
+                    label: __('Locality Name'),
+                    labelFor: 'anf_locality',
+                    inputType: 'text',
+                    inputId: 'anf_locality',
+                    inputValue: old('anf_locality', $application->anf_locality),
+                    required: true,
+                    placeholder: __('Locality Name')
+                ),
+                new FormField(
+                    label: __('Nearest Landmark'),
+                    labelFor: 'anf_nearest_locality',
+                    inputType: 'text',
+                    inputId: 'anf_nearest_locality',
+                    inputValue: old('anf_nearest_locality', $application->anf_nearest_locality),
+                    required: true,
+                    placeholder: __('Nearest Landmark')
+                ),
+            ]
+            : [
+                new FormField(
+                    label: __('Street Name / Street Code'),
+                    labelFor: 'road_code',
+                    inputType: 'label',
+                    inputId: 'road_code',
+                    labelValue: $application->road_code,
+                    placeholder: __('Street Name / Street Code')
+                ),
+                new FormField(
+                    label: __('BIN'),
+                    labelFor: 'bin',
+                    inputType: 'label',
+                    inputId: 'bin',
+                    labelValue: $application->bin,
+                    placeholder: __('BIN')
+                ),
+                new FormField(
+                    label: __('House Number'),
+                    labelFor: 'house_address',
+                    inputType: 'label',
+                    inputId: 'house_address',
+                    labelValue: $address?->house_address
+                ),
+                new FormField(
+                    label: __('Containment ID'),
+                    labelFor: 'containment_id',
+                    inputType: 'label',
+                    inputId: 'containment_id',
+                    labelValue: $application->containment_id
+                ),
+                new FormField(
+                    label: __('Ward Number'),
+                    labelFor: 'ward',
+                    inputType: 'label',
+                    inputId: 'ward',
+                    labelValue: $application->ward,
+                    placeholder: __('Ward Number')
+                ),
+            ];
+
         $this->editFormFields = [
             [
-                "title" => __("Address"),
-                "fields" => [
-                    new FormField(
-                        label: __('Street Name / Street Code'),
-                        labelFor: 'road_code',
-                        inputType: 'label',
-                        inputId: 'road_code',
-                        labelValue: $application->road_code,
-                        placeholder: __('Street Name / Street Code'),
-                    ),
-                    new FormField(
-                        label: __('BIN'),
-                        labelFor: 'bin',
-                        inputType: 'label',
-                        inputId: 'bin',
-                        labelValue: $application->bin,
-                        placeholder: __('BIN'),
-                    ),
-                    new FormField(
-                        label: __('House Number'),
-                        labelFor: 'house_address',
-                        inputType: 'label',
-                        inputId: 'house_address',
-                        labelValue: $address->house_address
-                    ),
-                    new FormField(
-                        label: __('Containment ID'),
-                        labelFor: 'containment_id',
-                        inputType: 'label',
-                        inputId: 'containment_id',
-                        labelValue: $application->containment_id,
-                    ),
-                    new FormField(
-                        label: __('Ward Number'),
-                        labelFor: 'ward',
-                        inputType: 'label',
-                        inputId: 'ward',
-                        labelValue: $application->ward,
-                        placeholder: __('Ward Number'),
-                    ),
-                ]
+                "title" => $isAnf ? __('Address (House Number Unknown)') : __('Address'),
+                "fields" => $addressFields,
             ],
+        ];
 
-            [
+        if (!$isAnf) {
+            $this->editFormFields[] = [
                 "title" => __("Owner Details"),
                 "fields" => [
                     new FormField(
@@ -772,12 +842,13 @@ class ApplicationService
                         placeholder: __('Owner Contact (Phone)'),
                         disabled: true,
                     ),
-                ]
-            ],
+                ],
+            ];
+        }
 
-            [
+        $this->editFormFields[] = [
                 "title" => __("Applicant Details"),
-                "copyDetails" => true,
+                "copyDetails" => !$isAnf,
                 "fields" => [
                     new FormField(
                         label: __("Applicant Name"),
@@ -808,10 +879,10 @@ class ApplicationService
                         placeholder: __('Applicant Contact (Phone)'),
                         oninput: "validateOwnerContactInput(this)",
                     ),
-                ]
-            ],
+                ],
+            ];
 
-            [
+        $this->editFormFields[] = [
                 "title" => __("Service Provider Details"),
                 "fields" => [
                     new FormField(
@@ -849,9 +920,8 @@ class ApplicationService
                         required: true
                     ),
 
-                ]
-            ]
-        ];
+                ],
+            ];
 
         return $this->editFormFields;
     }
@@ -1472,8 +1542,22 @@ class ApplicationService
 
         try {
             $application = Application::findOrFail($id);
-            $application->update($request->all());
-            if ($application->address != '-') {
+            $isAnf = (bool) $application->is_anf;
+
+            // The saved address state controls which fields may be updated.
+            // Editing an application must not switch it between ANF and linked-building states.
+            $application->fill($request->except([
+                'is_anf',
+                'road_code',
+                'bin',
+                'ward',
+                'containment_id',
+                'customer_name',
+                'customer_gender',
+                'customer_contact',
+            ]));
+
+            if (!$isAnf) {
                 $building = Building::where('bin', '=', $application->bin)->firstOrFail();
                 $owner = $building->owners;
                 $application->containment_id = $request->containment_id ?? $application->containment_id;
@@ -1493,11 +1577,14 @@ class ApplicationService
                     "road_code" => $request->road_code ?? $building->road_code
                 ])->save();
             }
-            if ($application->address === '-') {
-                $application->ward = $request->ward_no_addr ?? $application->ward;
-                $application->road_code = $request->road_code_no_addr ?? $application->road_code;
-                $application->proposed_emptying_date = $request->proposed_emptying_date_no_addr ?? $application->proposed_emptying_date;
+
+            if ($isAnf) {
+                $application->is_anf = true;
+                $application->ward = $request->anf_ward;
+                $application->anf_locality = $request->anf_locality;
+                $application->anf_nearest_locality = $request->anf_nearest_locality;
             }
+
             $application->save();
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', __('Failed to update Application.') . $e);
