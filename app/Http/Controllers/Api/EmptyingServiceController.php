@@ -125,14 +125,14 @@ class EmptyingServiceController extends Controller
                 DB::raw('COALESCE(e.emptying_trip_no, 0) AS emptying_trip_no'),
                 DB::raw('COALESCE(s.sludge_trip_no, 0) AS sludge_trip_no'),
 
-                // helpful flag for mobile  (FIXED: boolean comparisons)
+                // Helpful flag for mobile. Status columns are PostgreSQL integers.
                 DB::raw("
                     CASE
                         WHEN applications.proposed_emptying_date IS NOT NULL
-                             AND applications.emptying_status = false
+                             AND applications.emptying_status = 0
                         THEN 'first'
-                        WHEN applications.emptying_status = true
-                             AND applications.sludge_collection_status = true
+                        WHEN applications.emptying_status = 1
+                             AND applications.sludge_collection_status = 1
                              AND COALESCE(e.emptying_trip_no,0) = COALESCE(s.sludge_trip_no,0)
                              AND COALESCE(e.emptying_trip_no,0) < applications.trip_count
                         THEN 'next'
@@ -152,15 +152,15 @@ class EmptyingServiceController extends Controller
                 $join->on('s.application_id', '=', 'applications.id');
             })
             ->whereNotNull('applications.proposed_emptying_date')
-            // only return apps where emptying can be ADDED now  (FIXED: booleans)
+            // Only return applications where emptying can be added now.
             ->where(function ($q) {
-                // (1) first emptying allowed  → emptying_status = false
-                $q->where('applications.emptying_status', false);
+                // (1) First emptying allowed.
+                $q->where('applications.emptying_status', 0);
 
-                // (2) next emptying allowed
+                // (2) Next emptying allowed.
                 $q->orWhere(function ($q2) {
-                    $q2->where('applications.emptying_status', true)
-                        ->where('applications.sludge_collection_status', true)
+                    $q2->where('applications.emptying_status', 1)
+                        ->where('applications.sludge_collection_status', 1)
                         ->whereRaw('COALESCE(e.emptying_trip_no,0) = COALESCE(s.sludge_trip_no,0)')
                         ->whereRaw('COALESCE(e.emptying_trip_no,0) < applications.trip_count');
                 });
@@ -182,17 +182,17 @@ class EmptyingServiceController extends Controller
             $query->where('applications.road_code', $request->road_code);
         }
 
-        // FIXED: incoming 0/1 must be cast to real boolean for Postgres
+        // Cast incoming status filters to integers to match the database columns.
         if (!is_null($request->emptying_status) && $request->emptying_status !== '') {
             $query->where(
                 'applications.emptying_status',
-                filter_var($request->emptying_status, FILTER_VALIDATE_BOOLEAN)
+                (int) $request->emptying_status
             );
         }
         if (!is_null($request->sludge_collection_status) && $request->sludge_collection_status !== '') {
             $query->where(
                 'applications.sludge_collection_status',
-                filter_var($request->sludge_collection_status, FILTER_VALIDATE_BOOLEAN)
+                (int) $request->sludge_collection_status
             );
         }
 
@@ -1190,3 +1190,4 @@ class EmptyingServiceController extends Controller
         }
     }
 }
+    
