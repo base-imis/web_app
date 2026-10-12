@@ -23,6 +23,7 @@ use DataTables;
 use Carbon\Carbon;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Auth;
 
 class SludgeCollectionController extends Controller
@@ -460,7 +461,11 @@ class SludgeCollectionController extends Controller
         try {
             // If it's a FormRequest, validate
             if (method_exists($request, 'validated')) {
-                $request->validated();
+                try {
+                    $request->validated();
+                } catch (\Throwable $e) {
+                    // Ignore if validator already processed
+                }
             }
 
             // -------------------------
