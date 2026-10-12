@@ -182,6 +182,33 @@ class EmptyingServiceController extends Controller
             $query->where('applications.road_code', $request->road_code);
         }
 
+        // Server-side search across application, location, and applicant fields
+        if ($request->filled('search')) {
+            $term = '%' . trim($request->search) . '%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('CAST(applications.id AS VARCHAR) ILIKE ?', [$term])
+                  ->orWhereRaw('CAST(applications.bin AS VARCHAR) ILIKE ?', [$term])
+                  ->orWhere('applications.applicant_name', 'ILIKE', $term)
+                  ->orWhere('applications.applicant_contact', 'ILIKE', $term)
+                  ->orWhere('applications.customer_name', 'ILIKE', $term)
+                  ->orWhere('applications.customer_contact', 'ILIKE', $term)
+                  ->orWhere('applications.road_code', 'ILIKE', $term)
+                  ->orWhere('buildings.house_number', 'ILIKE', $term);
+            });
+        }
+
+        // Filter by is_anf (accepts "true"/"false"/1/0; omitted returns all)
+        if ($request->filled('is_anf')) {
+            if ($request->boolean('is_anf')) {
+                $query->where('applications.is_anf', true);
+            } else {
+                $query->where(function ($q) {
+                    $q->where('applications.is_anf', false)
+                      ->orWhereNull('applications.is_anf');
+                });
+            }
+        }
+
         // Cast incoming status filters to integers to match the database columns.
         if (!is_null($request->emptying_status) && $request->emptying_status !== '') {
             $query->where(
@@ -214,7 +241,7 @@ class EmptyingServiceController extends Controller
             $imageFile = $imageFolder . DIRECTORY_SEPARATOR . $application->bin . '.jpg';
             $application->image_status = file_exists($imageFile) ? "true" : "false";
 
-            $application->can_add_emptying = !empty($application->emptying_add_mode) ? "true" : "false";
+            $application->can_add_emptying = !empty($application->emptying_add_mode) && !$application->is_anf ? "true" : "false";
 
             return $application;
         });
