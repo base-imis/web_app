@@ -42,4 +42,11 @@ return [
     ],
 
     'audit_enabled' => env('PII_AUDIT_ENABLED', true),
+
+    'key_backup' => [
+        // These values are configurable so the reminder policy can change
+        // without altering application code.
+        'interval_days' => (int) env('PII_KEY_BACKUP_INTERVAL_DAYS', 60),
+        'warning_days' => (int) env('PII_KEY_BACKUP_WARNING_DAYS', 5),
+    ],
 ];

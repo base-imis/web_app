@@ -10,6 +10,7 @@ use App\Http\Controllers\Fsm\ApplicationController;
 use App\Http\Controllers\Api\ApiServiceController;
 use App\Http\Controllers\MapsController;
 use App\Http\Controllers\Proxy\WMSProxyController;
+use App\Http\Controllers\Security\PiiKeyBackupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -661,6 +662,10 @@ Route::group([
     Route::resource('setup', 'LanguageController');
 });
 Route::group(['middleware' => ['auth']], function () {
+    Route::post('/security/pii-key-backup', [PiiKeyBackupController::class, 'download'])
+        ->middleware(['throttle:3,60', 'pii.no-cache'])
+        ->name('pii-key-backup.download');
+
     /**
      * Logout Routes
      */
