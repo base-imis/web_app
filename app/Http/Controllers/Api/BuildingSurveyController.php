@@ -163,6 +163,44 @@ class BuildingSurveyController extends Controller
         }
     }
 
+    private function buildBuildingInfoResponse(string $bin, array $props, $lat, $lng): JsonResponse
+    {
+        $building = Building::with(['Owners', 'StructureType', 'containments.containmentType'])
+            ->where('bin', $bin)->first();
+
+        if (!$building) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Building is in GeoServer but not in the database.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Building found at this location.',
+            'data' => [
+                'found' => true,
+                'lat' => (float) $lat,
+                'lng' => (float) $lng,
+                'building' => [
+                    'bin' => $building->bin,
+                    'owner_name' => $building->Owners->owner_name ?? null,
+                    'ward' => $building->ward,
+                    'house_number' => $building->house_number,
+                    'road_code' => $building->road_code,
+                    'floor_count' => $building->floor_count,
+                    'structure_type' => optional($building->StructureType)->type,
+                ],
+                'containments' => $building->containments->map(fn ($c) => [
+                    'id' => $c->id,                                  // e.g. "C009026"
+                    'type' => optional($c->containmentType)->type,
+                    'size' => $c->size,
+                    'construction_date' => $c->construction_date,
+                ])->values(),
+            ],
+        ]);
+    }
+
     public function getSewerCodes()
     {
         try {   

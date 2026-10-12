@@ -264,6 +264,32 @@ class ApplicationController extends Controller
             'containment_id' => 'required|string', // 👈 required
         ]);
 
+        $application = Application::find($id);
+
+        if (!$application) {
+            return response()->json([
+                'status'  => false,
+                'message' => __('Application not found.')
+            ], 404);
+        }
+
+        if (!$application->is_anf) {
+            return response()->json([
+                'status'  => false,
+                'message' => __('This application is not an Address Not Found (ANF) application or has already been resolved.')
+            ], 422);
+        }
+
+        $user = Auth::user();
+        if ($user && $user->hasRole('Service Provider - Emptying Operator')) {
+            if ($user->service_provider_id && $application->service_provider_id != $user->service_provider_id) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => __('Unauthorized. You do not have permission to resolve applications for other service providers.')
+                ], 403);
+            }
+        }
+
         try {
             $this->applicationService->resolveAnf(
                 $id,

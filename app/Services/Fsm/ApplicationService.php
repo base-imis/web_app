@@ -2100,12 +2100,16 @@ class ApplicationService
     {
         $application = Application::findOrFail($applicationId);
 
+        if (!$application->is_anf) {
+            throw new \Exception(__('This application is not an Address Not Found (ANF) application or has already been resolved.'));
+        }
+
         // Find containment by code field
         $containment = Containment::where('id', $containmentCode)->firstOrFail();
 
-        // Check no duplicate containment in applications table
+        // Check no duplicate containment in applications table (covers both not started and in-progress multi-trip)
         $alreadyExists = Application::where('containment_id', $containment->id)
-            ->where('emptying_status', 0)
+            ->whereIn('emptying_status', [0, 1])
             ->whereNull('deleted_at')
             ->where('id', '!=', $applicationId)
             ->exists();
@@ -2115,6 +2119,12 @@ class ApplicationService
         }
 
         $building = Building::where('bin', $bin)->firstOrFail();
+
+        // Ensure the containment belongs to the selected building
+        if (!$building->containments()->where('containments.id', $containment->id)->exists()) {
+            throw new \Exception(__('The selected containment does not belong to this building.'));
+        }
+
         $owner    = $building->owners;
 
         $application->bin              = $building->bin;
