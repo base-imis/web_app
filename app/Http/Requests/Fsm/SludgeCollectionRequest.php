@@ -34,7 +34,7 @@ class SludgeCollectionRequest extends FormRequest
             'date' => 'required|date|after_or_equal:today',
             'entry_time' => 'required|date_format:H:i',
             'exit_time' => 'required|date_format:H:i|after:entry_time',
-            'tipping_fee_amount' => 'required',
+            'tipping_fee_amount' => 'required|integer|min:0',
             'tipping_fee_receipt_no'=>'required'
         ];
     }
@@ -45,7 +45,7 @@ class SludgeCollectionRequest extends FormRequest
             'entry_time' => 'required|date_format:H:i',
             'exit_time' => 'required|date_format:H:i|after:entry_time',
             'treatment_plant_id' => 'required|integer',
-            'tipping_fee_amount' => 'required',
+            'tipping_fee_amount' => 'required|integer|min:0',
             'tipping_fee_receipt_no'=>'required'
         ];
     }
@@ -64,6 +64,8 @@ class SludgeCollectionRequest extends FormRequest
             'exit_time.required' => __('The Exit Time is required.'),
             'exit_time.after' => __('The Exit Time must be after the Entry Time.'),
             'tipping_fee_amount.required' => __('The Tipping Fee Amount is required.'),
+            'tipping_fee_amount.integer' => __('The Tipping Fee Amount must be a whole number.'),
+            'tipping_fee_amount.min' => __('The Tipping Fee Amount must be at least 0.'),
             'tipping_fee_receipt_no.required' => __('The Tipping Fee Receipt No is required.'),
 
         ];

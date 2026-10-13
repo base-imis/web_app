@@ -1,5 +1,5 @@
 @extends('layouts.dashboard')
-@section('title', __('Add Emptying Service Details'))
+@section('title', $page_title)
 
 @section('content')
 
@@ -47,12 +47,17 @@
     @include('layouts.components.success-alert')
     @include('layouts.components.error-alert')
     <div class="card-body">
-        {!! Form::open(['url' => route('emptying.store'), 'class' => 'form-horizontal', 'files' => true]) !!}
+        {!! Form::model($emptying, [
+            'url' => $formAction,
+            'method' => 'PATCH',
+            'class' => 'form-horizontal',
+            'files' => true,
+        ]) !!}
         @if($is_anf)
             <input type="hidden" name="anf_bin" id="anf_bin">
             <input type="hidden" name="anf_containment_id" id="anf_containment_id">
         @endif
-        @include('layouts.partial-form', ["submitButtonText" => __('Save')])
+        @include('layouts.partial-form', ["submitButtonText" => __('Update')])
         {!! Form::close() !!}
     </div>
 </div>
