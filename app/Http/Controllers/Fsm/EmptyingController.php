@@ -119,9 +119,11 @@ class EmptyingController extends Controller
      */
     public function edit($id)
     {
-        $emptying = Emptying::find($id);
-       $application = Application::with('emptying')
-        ->findOrFail($emptying->application_id);
+        $emptying = Emptying::findOrFail($id);
+        $application = Application::with('emptying')
+            ->findOrFail($emptying->application_id);
+        $is_anf = (bool) $application->is_anf;
+
         if( !(Auth::user()->hasRole('Super Admin') || Auth::user()->hasRole('Municipality - Sanitation Department')) )
         {
             if($emptying->created_at->diffInDays(today()) > 1)
@@ -129,15 +131,20 @@ class EmptyingController extends Controller
                 return redirect('fsm/application')->with('error',__('Cannot update Emptying Information 24 hours after creation. Please contact Sanitation Department for more information.'));
             }
         }
-        if ($emptying) {
-            $page_title = __("Edit Emptying Service Details");
-            $formFields = $this->emptyingService->getEditFormFields($emptying);
-            $formAction = $this->emptyingService->getEditFormAction($emptying);
-            $indexAction = url()->previous();
-            return view('fsm.emptying.edit',compact('page_title','formFields','formAction','indexAction','emptying','application'));
-        } else {
-            abort(404);
-        }
+        $page_title = __("Edit Emptying Service Details");
+        $formFields = $this->emptyingService->getEditFormFields($emptying);
+        $formAction = $this->emptyingService->getEditFormAction($emptying);
+        $indexAction = url()->previous();
+
+        return view('fsm.emptying.edit', compact(
+            'page_title',
+            'formFields',
+            'formAction',
+            'indexAction',
+            'emptying',
+            'application',
+            'is_anf'
+        ));
     }
 
     /**
