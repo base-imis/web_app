@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -85,7 +86,7 @@ class AuthController extends Controller
                          "building-survey" => (bool)$user->can('Access Building Survey API'),
                          "save-emptying-service" => (bool)$user->can('Access Emptying Service API'),
                          "sewer-connection" => (bool)$user->can('Access Sewer Connection API'),
-                         "sludge-collection" => (bool)$user->can('Add Sludge Collection'),
+                         "sludge-collection" => (bool)$user->can('Access Sludge Collection API'),
                      ],
                  ]
              ]);
@@ -112,5 +113,14 @@ class AuthController extends Controller
             'success' => true,
             'message' => __('Logged out successfully.'),
         ];
+    }
+
+    public function footer()
+    {
+        return response()->json([
+           'Base IMIS © 2022-' . Carbon::now()->format('Y') .
+                    ' by ISPL & GWSC-AIT (GWSC-AIT) is licensed under CC BY-NC-SA 4.0 | Developed by: Innovative Solution Pvt. Ltd.'
+
+        ]);
     }
 }

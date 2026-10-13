@@ -54,11 +54,11 @@ class TreatmentPlantAdminSeeder extends Seeder
 
                     // map tools data
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Maps'])->whereIn('name',[ 'Containments Map Layer', 'Sanitation System Map Layer']));
-                    
+
                     // Mobile login
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['API'])
-                        ->where('name','Access Emptying Service API'));
-
+                            ->where('name','Access Sludge Collection API'));
+                        
                     break;
 
             }

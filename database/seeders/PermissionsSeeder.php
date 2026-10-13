@@ -787,6 +787,10 @@ class PermissionsSeeder extends Seeder
                         "type" => "API - Sewer Connection",
                         "name" => "Access Sewer Connection API"
                     ],
+                    [
+                        "type" => "API - Sludge Collection",
+                        "name" => "Access Sludge Collection API"
+                    ],
                 ]
             ],
             [
