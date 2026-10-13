@@ -1,11 +1,14 @@
-Version: V1.1.0  
-Application: Base IMIS 1.3.0 NSD  
-Document type: Code and workflow reference  
-Source reviewed: 2026-09-17
+- Version: V1.2.0
+- Application: Base IMIS v2.0.0 — desludging scheduling scope
+- Document type: Code and workflow reference
+- Source reviewed: 2026-10-13
+- Source branch: `v2.0.0-desludging-schedule-clean`, commit `50927a82`
 
 # Fecal Sludge IMS — Service Delivery
 
 This document follows the submodule and code-component layout used by `05 - Fecal Sludge IMS.md`. It covers the service chain from provider setup and scheduled desludging through application, emptying, sludge collection, and feedback. Field definitions belong in the [existing data dictionary](../data_dictionary/data_dictionary.md).
+
+This revision describes the clean scheduling branch. The later ANF, multi-trip, sludge-collection-log, Places and expanded API changes assigned to v2.0.1 are outside this release. References to existing emptying, sludge collection and feedback describe the baseline service chain, not those later features.
 
 ## Service Delivery Chain
 
@@ -65,6 +68,58 @@ The code-document convention is **Tables → Views → Models → Controller →
 | Create/update provider | Saves provider and synchronized ward coverage. |
 | Change to non-operational | Unassigns incomplete applications previously allocated to that provider. |
 | Read provider coverage | Scheduling and reintegration accept either normalized ward rows or the compatibility CSV. |
+
+#### Add service provider
+
+1. `ServiceProviderController::create()` loads all municipality wards from `layer_info.wards` in ward order and the status choices from `ServiceProviderStatus`. It also calls `getUncoveredServiceAreaWards()` for the add-form information popover.
+2. The uncovered list is the set of positive municipality ward numbers minus coverage belonging to non-deleted operational providers. Coverage is combined from the provider CSV and normalized ward table. The popover is informational: the form still offers all wards, and overlapping provider coverage is allowed.
+3. `create.blade.php` submits a multipart `POST /fsm/service-providers`. The shared partial collects company name, email, office ward, address, contact name/gender/number, operational status, contract PDF and one or more service-area wards. The office `ward` and coverage `service_area[]` are separate fields.
+4. `ServiceProviderRequest` validates the submission before `store()`. Company names must be unique among non-deleted providers. Email must be valid, at most 255 characters and unique against `auth.users`; the check is not a provider-table email uniqueness constraint. Contact number accepts digits only. Status is boolean. Service area must be an array with at least one integer ward value.
+5. The contract is required, must pass PDF file validation and cannot exceed 5 MB (`max:5120`). The browser's PDF accept filter is supplemented by server validation. `store()` sanitizes the company name for a filename, appends the current timestamp and writes the file to the `public` disk under `contract_documents/`. The database receives the relative path.
+6. `ServiceProviderService::storeOrUpdate(null, $data)` converts wards to integers, removes non-positive and duplicate values, sorts them, saves a CSV such as `1,3,5`, saves the provider, and replaces its normalized ward rows through `syncServiceAreaWards()`. Creation returns the provider ID.
+7. If `create_user` is filled, the controller passes the original request fields to `UserService::storeOrUpdate()`, with the new provider ID, user type `Service Provider`, role `Service Provider - Admin`, company name as the account name, contact gender, and the email local part as the username. The password is required when `create_user=on`, confirmed, and subject to the configured complexity and uncompromised-password rule. The user-account step is only part of creation.
+8. The controller redirects to the provider list with a provider-only or provider-and-user success message. Validation errors return the form with errors and old input.
+
+#### Edit service provider
+
+1. `edit($id)` uses `findOrFail()`; missing or soft-deleted providers return 404. It loads all wards and status choices, converts the existing `service_area` CSV to integer selections, and renders `edit.blade.php` using `Form::model()`.
+2. The form submits multipart `PATCH /fsm/service-providers/{id}`. `old('service_area', $selectedWards ?? [])` preserves submitted coverage after validation errors. The existing PDF link is shown when a path is present; an existing provider without a contract receives an explanatory message. The uncovered-wards popover is shown only on the add form.
+3. `ServiceProviderRequest` applies the required identity, contact, status and service-area rules on update. Company uniqueness ignores the current provider. The email uniqueness rule ignores users with this provider ID; the update also applies the request's email regex. A replacement PDF is optional but must still be PDF and at most 5 MB.
+4. Without a replacement, `update()` retains the current contract path. With a replacement, it stores the new PDF first and then deletes the previous file if it exists on the public disk, before calling the provider service to save the new path.
+5. `storeOrUpdate($id, $data)` saves the edited provider and recomputes both coverage stores. `syncServiceAreaWards()` deletes existing rows for this provider, then inserts one timestamped row for each normalized ward. Changing coverage does not itself regenerate the schedule.
+6. Whenever the submitted status is non-operational (`0`), the service finds that provider's applications where `emptying_status = false` and sets `service_provider_id` to null. Completed emptyings are not unassigned by this operation. This condition applies on any update with status 0, not only a transition from operational to non-operational.
+7. The controller redirects to the provider list with an update success message. This action does not create or update the optional provider-admin account.
+
+#### Service provider details
+
+`show($id)` loads the provider, returns 404 if absent, resolves its readable status through `ServiceProviderStatus::getDescription()`, and renders `show.blade.php`. The page displays company name, email, office ward, address, contact name/gender/number, contract link, service-area wards and status, with a Back to List button.
+
+The contract link uses `asset('storage/' . $serviceProvider->contract_document_pdf)` and opens in another tab. A missing path displays `Not available`; the detail view does not check whether the referenced file actually exists. Service-area display comes from the CSV with comma-and-space formatting, not from a live read of the normalized coverage table. Empty coverage displays `Not available`.
+
+#### Provider routes and access
+
+All routes are in the authenticated `/fsm` web group. Controller permission checks for provider actions are:
+
+| Method and route | Controller action | Permission |
+| --- | --- | --- |
+| `GET /fsm/service-providers` | `index()` | `List Service Providers` |
+| `GET /fsm/service-providers/create` | `create()` | `Add Service Provider` |
+| `POST /fsm/service-providers` | `store()` | `Add Service Provider` |
+| `GET /fsm/service-providers/{service_provider}/edit` | `edit()` | `Edit Service Provider` |
+| `PUT/PATCH /fsm/service-providers/{service_provider}` | `update()` | `Edit Service Provider` |
+| `GET /fsm/service-providers/{service_provider}` | `show()` | `View Service Provider` |
+| `DELETE /fsm/service-providers/{service_provider}` | `destroy()` | `Delete Service Provider` |
+| `GET /fsm/service-providers/export` | `export()` | `Export Service Providers to CSV` |
+
+The `/data` and `/{id}/history` endpoints also exist. Their controller methods have authentication but are not included in the controller's action-specific provider permission lists; visibility of list buttons should not be treated as proof of direct-route authorization.
+
+#### Persistence and scheduling dependencies
+
+- `2026_08_14_100641_add_contract_document_pdf_and_service_area_to_service_providers_table.php` adds the contract path and compatibility CSV fields.
+- `2026_08_20_115109_create_service_provider_wards_table.php` adds the normalized coverage table, unique provider/ward pairs, and indexes. It does not declare a foreign key or prevent different providers from covering the same ward.
+- Validation checks integer ward values but does not enforce that each submitted ward exists in `layer_info.wards`. The service discards non-positive values. The UI supplies municipality wards; this differs from a database-backed membership validation rule.
+- The provider save, coverage delete/insert, contract storage/deletion, and optional user creation are not wrapped in one controller/service transaction. A failure between steps can leave partial database or file changes. Contract replacement has no automatic file rollback.
+- Schedule regeneration reads operational provider coverage from both stores. Overlapping coverage resolves to the lowest operational provider ID for a queue row. Reintegration also resolves providers using the current building ward. Provider edits do not immediately recalculate existing temporary assignments.
 
 ### Employee Information
 
@@ -243,12 +298,15 @@ Before deployment, back up the database and uploaded files; then deploy dependen
 
 ## Verification Checklist
 
-1. Create a provider with contract and wards; verify CSV and normalized coverage and non-operational reassignment.
-2. Test priority boundaries, future dates, daily capacity, weekends/holidays, concurrent regeneration, unassigned wards and overlapping provider coverage.
-3. Verify disagreement removes a queue row, status 4 appears in reintegration, and reintegration resolves a provider by current building ward.
-4. Test manual application and scheduled confirmation separately; verify the known confirmation dependency below before claiming completion.
-5. Record web and mobile emptying, then sludge collection and feedback; verify application flags and containment dates.
-6. Test direct-route permission enforcement for municipality, provider and treatment-plant users.
+1. Create a provider with a valid PDF and multiple wards; verify positive, unique, sorted CSV values and matching normalized rows. Check the uncovered-wards popover against operational providers in both stores, including the all-covered case and overlapping coverage.
+2. Reject missing create contracts, non-PDF files, files above 5 MB, missing coverage, duplicate active company names and invalid contact/email values. Test optional admin creation with and without a valid confirmed password.
+3. Edit provider details and coverage; verify old input after a validation failure. Test keeping a contract, replacing it, and viewing a provider with no contract. Verify non-operational updates unassign only applications awaiting emptying, and that provider-admin credentials are not edited by this action.
+4. Verify provider detail fields, status description, PDF URL, CSV display and 404 for a missing provider. Check Add/Edit/View permissions with direct requests, not only UI buttons. Verify file handling failure paths separately from successful database saves.
+5. Test priority boundaries, future dates, daily capacity, weekends/holidays, concurrent regeneration, unassigned wards and overlapping provider coverage.
+6. Verify disagreement removes a queue row, status 4 appears in reintegration, and reintegration resolves a provider by current building ward.
+7. Test manual application and scheduled confirmation separately; verify the known confirmation dependency below before claiming completion.
+8. Record web and mobile emptying, then sludge collection and feedback; verify application flags and containment dates.
+9. Test direct-route permission enforcement for municipality, provider and treatment-plant users.
 
 ## Implementation Considerations
 
@@ -262,3 +320,5 @@ Before deployment, back up the database and uploaded files; then deploy dependen
 ## Source Traceability
 
 This revision was compared with `documentations/code_documents/05 - Fecal Sludge IMS.md`, the prior FSM technical draft, `routes/web.php`, `routes/api.php`, the FSM controllers/services/requests/models named above, scheduling migrations from August 2026, and `database/seeders/PermissionsSeeder.php`. It is a source-code review, not a claim that deployment migrations or end-to-end tests were run.
+
+The expanded provider workflows were checked against `ServiceProviderController.php`, `ServiceProviderService.php`, `ServiceProviderRequest.php`, `ServiceProvider.php` and `resources/views/fsm/service-providers/{create,edit,partial-form,show}.blade.php` on the clean branch. Existing regression references include `tests/Feature/Fsm/ServiceProviderCreationTest.php`, `ServiceProviderCrudTest.php` and the scheduled-desludging feature tests; the checklist above states what to verify, not a test-execution result.
