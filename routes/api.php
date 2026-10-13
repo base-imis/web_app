@@ -67,6 +67,7 @@ Route::group([
     |
     */
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/footer', [AuthController::class, 'footer']);
 
     /*
     |
