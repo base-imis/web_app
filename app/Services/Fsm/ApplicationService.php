@@ -1,6 +1,6 @@
 <?php
 // Last Modified Date: 11-04-2024
-// Developed By: Innovative Solution Pvt. Ltd. (ISPL)  
+// Developed By: Innovative Solution Pvt. Ltd. (ISPL)
 namespace App\Services\Fsm;
 
 use App\Classes\FormField;
@@ -1028,9 +1028,9 @@ class ApplicationService
     public function getAllApplications(Request $request)
     {
         // Select only columns consumed by the table. Applicant name/contact
-        // are operational fields displayed by the v2.0.3 Application list.
-        // Customer gender remains excluded, while customer name/contact are
-        // passed through the masking/reveal callbacks below.
+        // are the operational fields displayed by the v2.0.3 Application
+        // list. Encrypted customer/owner PII is intentionally not included in
+        // the DataTable JSON response, even while owner lookup mode is active.
         $columns = [
             'applications.id',
             'applications.bin',
@@ -1043,9 +1043,7 @@ class ApplicationService
             'applications.emptying_status',
             'applications.sludge_collection_status',
             'applications.feedback_status',
-            'applications.trip_count',
-            'applications.customer_name',
-            'applications.customer_contact',
+
             'applications.ward',
             'applications.service_provider_id',
             'building_info.buildings.house_number AS house_address',
@@ -1154,20 +1152,6 @@ class ApplicationService
                     $query->whereDate('application_date', '>=', $request->date_from);
                     $query->whereDate('application_date', '<=', $request->date_to);
                 }
-            })
-            ->editColumn('customer_name', function ($model) use ($revealCustomerPii) {
-                $value = $model->getAttributes()['customer_name'] ?? null;
-
-                return $revealCustomerPii
-                    ? $this->customerPiiPresenter->presentPlaintextValue($value)
-                    : $this->customerPiiPresenter->mask($value);
-            })
-            ->editColumn('customer_contact', function ($model) use ($revealCustomerPii) {
-                $value = $model->getAttributes()['customer_contact'] ?? null;
-
-                return $revealCustomerPii
-                    ? $this->customerPiiPresenter->presentPlaintextValue($value)
-                    : $this->customerPiiPresenter->mask($value);
             })
             ->addColumn('action', function ($model) {
                 $emptyingTripNo = optional($model->emptying)->trip_no ?? 0;
@@ -1606,13 +1590,13 @@ class ApplicationService
                             $etoUserIds   = array_values(array_unique($etoUserIds));
                         }
                     }
-                   
+
                 });
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Database error in application creation: ' . $e->getMessage());
                 return redirect()->back()->withInput()
                     ->with('error', __('Database error occurred. Please try again.'));
-                    
+
             } catch (\Throwable $e) {
                 \Log::error('Application creation failed: ' . $e->getMessage() . ' line ' . $e->getLine() . ' file ' . $e->getFile());
                 return redirect()->back()->withInput()
@@ -2074,7 +2058,7 @@ class ApplicationService
             $containmentSize = $firstContainment
                 ? Containment::where('id', $firstContainment->id)->value('size')
                 : null;
-    
+
             // Fetch additional related data
             $owner = $building->owners;
             $road = $building->roadlines;
