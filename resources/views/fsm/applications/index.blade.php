@@ -292,8 +292,6 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             <th>{{ __('Ward Number') }}</th>
                             <th>{{ __('Applicant Name') }}</th>
                             <th>{{ __('Applicant Contact') }}</th>
-                            <th>{{ __('Owner Name') }}</th>
-                            <th>{{ __('Owner Contact') }}</th>
                             <th>{{ __('Service Provider Name') }}</th>
                             <th>{{ __('Application Date') }}</th>
                             <th>{{ __('Proposed Emptying Date') }}</th>
@@ -639,7 +637,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
         @endif
 
         $(document).ready(function () {
-            
+
             $('#btnShowTP').on('click', function() {
             $.ajax({
                 url: '{{ route("application.treatment-plant") }}',
@@ -655,7 +653,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                         const options = { month: 'long', day: 'numeric' };
                         $('#currentDate').html(dateObj.toLocaleDateString(undefined, options));
                     }
-                    
+
                     var html = '';
                     if(response.plants && response.plants.length > 0) {
                         $.each(response.plants, function(index, plant) {
@@ -727,15 +725,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                     { data: 'ward', name: 'ward' },
                     { data: 'applicant_name', name: 'applicant_name' },
                     { data: 'applicant_contact', name: 'applicant_contact' },
-                    { data: 'customer_name', name: 'customer_name', orderable: false, searchable: false },
-                    { data: 'customer_contact', name: 'customer_contact', orderable: false, searchable: false },
                     { data: 'service_provider_id', name: 'service_provider_id' },
-                    { 
-                        data: 'application_date', 
+                    {
+                        data: 'application_date',
                         name: 'application_date',
                         render: function(data) { return data ? moment(data).format("dddd, MMMM Do YYYY") : ''; }
                     },
-                    { data: 'proposed_emptying_date', name: 'proposed_emptying_date' },                
+                    { data: 'proposed_emptying_date', name: 'proposed_emptying_date' },
                     { data: 'emptying_status', name: 'emptying_status' },
                     { data: 'sludge_collection_status', name: 'sludge_collection_status' },
                     { data: 'feedback_status', name: 'feedback_status' },
