@@ -28,6 +28,7 @@ return new class extends Migration
                 service_provider_id integer NULL,
                 trip_no integer NULL,
                 tipping_fee_amount numeric NULL,
+                tipping_fee_receipt_no varchar(255) NULL,
                 total_time integer NULL,
                 created_at timestamp NULL,
                 updated_at timestamp NULL,
