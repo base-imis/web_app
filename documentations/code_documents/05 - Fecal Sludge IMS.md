@@ -1,6 +1,10 @@
-Version: V1.0.0
+- Version: V1.1.0
+- FSM scheduling and service-provider sections reviewed: 2026-10-13
+- Source: `v2.0.0-desludging-schedule-clean` (`50927a82`)
 
 # Fecal Sludge IMS
+
+The scheduling and provider updates in this revision cover the clean v2.0.0 release. Later ANF, multi-trip, sludge-collection-log, Places and expanded API features belong to v2.0.1 and are not included here. The detailed reference is [FSM Service Delivery](21%20-%20FSM_SERVICE_DELIVERY_TECHNICAL_DOCUMENT.md). Older dashboard, containment and downstream-service sections below retain their existing baseline descriptions.
 
 ## UML Diagram
 
@@ -307,11 +311,13 @@ Service Provider IMS encompasses three different sub-modules:
 
 Tables
 
-The service providers module uses the following table:
+The service providers module uses the following tables:
 
--   service_providers: stores primary information of service provider.
+-   `fsm.service_providers`: provider identity, contact, office ward, operational status, `contract_document_pdf` path and `service_area` ward CSV.
+-   `fsm.service_provider_wards`: normalized ward coverage with a unique `(service_provider_id, ward)` pair and timestamps. Several providers may cover the same ward; there is no provider foreign key in this migration.
+-   `layer_info.wards`: municipality ward choices and the population used to calculate uncovered wards.
 
-The corresponding tables have their respective models that are named in Pascal Case in singular form. The service provider modules are located at app\\Http\\Models\\Fsm\\ServiceProvider.
+The provider model is `app/Models/Fsm/ServiceProvider.php`. Normalized ward coverage is synchronized with query-builder operations in `ServiceProviderService`, not a separate coverage model.
 
 Views
 
@@ -321,7 +327,7 @@ All views used by this module is stored in resources\\views\\fsm\\service-provid
 -   service-providers.edit: opens from and calls partial-form for form contents.
 -   service-providers.history: lists all past edits of the record.
 -   service-providers.index: lists service providers records.
--   service-providers.show lists service providers.
+-   service-providers.show: displays a single provider's details, contract link, coverage and readable status.
 -   service-providers.partial-form: creates form content for addition of new service providers or edit service providers.
 
 Models
@@ -339,9 +345,31 @@ Service Provider Request
 
 Location: app\\Http\\Requests\\Fsm\\ServiceProviderRequest.php
 
-ServiceProviderRequest handles all validation login. It handles validation logic as well as error messages to be displayed.
+ServiceProviderRequest handles validation rules and error messages. Creation requires a PDF contract up to 5 MB; replacement on edit is optional with the same file rules. Both actions require a service-area array with at least one integer ward, company/contact details and boolean operational status. Company uniqueness is checked among non-deleted providers. Email uniqueness is checked against `auth.users`, with the current provider's users excluded on update.
 
-Service Providers follow CRUD operations, which usually have the same pattern. You can refer to the "Basic CRUD" section above (2.2) for more information.
+#### Add logic
+
+`ServiceProviderController::create()` loads ward/status choices and the uncovered-wards information for the add form. The popover calculates wards not covered by operational providers, using both CSV and normalized coverage; it does not restrict the dropdown or forbid overlapping coverage. Office ward and service-area wards are separate inputs.
+
+The multipart `POST /fsm/service-providers` calls `store()` after request validation. The PDF is stored on the public disk under `contract_documents/`, using a sanitized company name and timestamp. `ServiceProviderService::storeOrUpdate(null, $data)` saves the provider, converts selected wards into positive unique sorted integers, writes their CSV to `service_area`, and replaces the provider's normalized ward rows. It returns the new provider ID.
+
+When `create_user` is filled, the controller calls `UserService` to create a linked `Service Provider - Admin` account, with user type `Service Provider`, company name as the account name and the email local part as the username. Password validation is conditional on `create_user=on`. The action redirects to the provider list with the appropriate success message.
+
+#### Edit logic
+
+`edit($id)` loads the provider with `findOrFail()`, ward/status choices and selected wards parsed from the saved CSV. `edit.blade.php` binds the model and submits multipart `PATCH /fsm/service-providers/{id}`. Old service-area input is retained after validation failures.
+
+`update()` keeps the existing contract when no new PDF is supplied. When replacing it, the controller stores the new PDF, deletes the old file if it exists, and then saves the new path through `storeOrUpdate($id, $data)`. Coverage is normalized and synchronized again. Updating with non-operational status (`0`) clears `service_provider_id` from this provider's applications where `emptying_status = false`; completed emptyings are not unassigned. The provider edit action does not edit the linked admin account or regenerate existing schedule rows.
+
+#### Detail logic
+
+`show($id)` renders `show.blade.php` with the provider and a description from `ServiceProviderStatus`; an absent provider returns 404. The page shows company name, email, office ward, address, contact name/gender/number, readable status, contract and service areas. The PDF opens from `storage/<saved path>` in a new tab. Missing contract paths or empty coverage display `Not available`. Coverage display formats the saved CSV; it does not query the normalized ward table.
+
+#### Permissions, persistence and verification
+
+The controller requires `Add Service Provider` for create/store, `Edit Service Provider` for edit/update and `View Service Provider` for details, in addition to authentication. List, delete and CSV export have their own permissions. Data/history actions are not in the action-specific permission lists.
+
+Provider saving, coverage replacement, PDF handling and optional account creation are not one transaction. A file link does not prove that the stored PDF exists. Verify creation validation, keeping/replacing contracts, coverage synchronization, optional account creation, direct-route access, missing-provider 404 and non-operational reassignment. See the [detailed provider workflow and route tables](21%20-%20FSM_SERVICE_DELIVERY_TECHNICAL_DOCUMENT.md#service-provider-ims) for the exact rules, migrations and failure considerations.
 
 ### Employee Information
 
@@ -580,6 +608,31 @@ PerformanceTestRequest handles all validation login. It handles validation logic
 Performance Efficiency Test follow CRUD operations, which usually have the same pattern. You can refer to the "Basic CRUD" section above (Section 1.4) for more information.
 
 ## Emptying Service IMS
+
+### Scheduled Desludging and Reintegration
+
+Scheduled desludging adds a temporary queue before the existing application, emptying, sludge collection and feedback chain. The queue is generated working data, not a permanent application record.
+
+| Component | Source |
+| --- | --- |
+| Schedule controller | `app/Http/Controllers/Fsm/DesludgingScheduleController.php` |
+| Reintegration controller | `app/Http/Controllers/Fsm/DesludgingReintegrationController.php` |
+| Generation and handoff service | `app/Services/Fsm/DesludgingScheduleService.php` |
+| Queue model/table | `app/Models/Fsm/DesludgingSchedule.php`; `fsm.desludging_schedule_temp` |
+| Views | `resources/views/fsm/desludging-schedule/index.blade.php`, `resources/views/fsm/desludging-reintegration/index.blade.php` |
+| Supporting data | `fsm.containments`, building/owner context, provider coverage and `public.site_settings` |
+
+`regenerate()` performs priority calculation, date allocation, queue refresh and provider assignment inside a database transaction with a PostgreSQL advisory lock. Concurrent regeneration returns HTTP 409. Priority uses valid last-emptying date, then construction date: no usable date or more than three years gives priority 1; between one and three years gives priority 2; within one year gives priority 3. Future dates are ignored.
+
+Date allocation uses never-emptied active containments, configured working dates, holidays and remaining daily trip capacity. Queue refresh has different status and open-application eligibility criteria; it must not be described as the same population or order as date allocation. Uncovered wards may be distributed among operational providers without coverage; queue provider selection uses current building ward and selects the lowest operational provider ID where coverage overlaps. Unmatched rows remain unassigned.
+
+Accepting a schedule row stores server-side context and opens application creation in confirm mode. Disagreeing sets containment status to 4 and removes its queue row transactionally. Reintegration lists status-4 containments; confirmation resolves provider coverage by current building ward and hands off to the application form. Scheduled application creation sets containment status to 1 and removes its temporary rows after a successful save.
+
+The clean code still requires `supervisory_assessment_date` in confirm-mode request validation and reads it in the application service. This is an existing confirmation dependency requiring verification, not an additional workflow stage introduced by this documentation. See [implementation considerations](21%20-%20FSM_SERVICE_DELIVERY_TECHNICAL_DOCUMENT.md#implementation-considerations).
+
+Schedule list/data, regenerate, accept and disagree use their respective `List`, `Regenerate`, `Confirm` and `Delete Schedule Desludging` permissions. Reintegration uses `List Schedule Reintegration` and `Confirm Schedule Reintegration`. Exact routes, capacity/settings rules and QA scenarios are in the [detailed scheduling reference](21%20-%20FSM_SERVICE_DELIVERY_TECHNICAL_DOCUMENT.md#scheduled-desludging).
+
+### Existing Application and Emptying Architecture
 
 A new architecture has been followed for the following sub-modules:
 
