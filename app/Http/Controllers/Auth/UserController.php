@@ -175,6 +175,40 @@ class UserController extends Controller
     }
 
     /**
+     * Prevent users with a general view permission from enumerating user
+     * records outside the organisation they administer.
+     */
+    private function authorizeUserRecord(User $target): void
+    {
+        $actor = Auth::user();
+
+        if ($actor->hasAnyRole([
+            'Super Admin',
+            'Municipality - Super Admin',
+            'Municipality - IT Admin',
+            'Municipality - Executive',
+        ])) {
+            return;
+        }
+
+        $authorized = $actor->id === $target->id;
+
+        if ($actor->hasRole('Municipality - Sanitation Department')) {
+            $authorized = in_array($target->user_type, [
+                'Service Provider',
+                'Treatment Plant',
+                'Help Desk',
+            ], true);
+        } elseif ($actor->service_provider_id) {
+            $authorized = $actor->service_provider_id === $target->service_provider_id;
+        } elseif ($actor->treatment_plant_id) {
+            $authorized = $actor->treatment_plant_id === $target->treatment_plant_id;
+        }
+
+        abort_unless($authorized, 403);
+    }
+
+    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id

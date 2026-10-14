@@ -10,6 +10,13 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\ValidateSeedUserConfiguration::class,
+        \App\Console\Commands\CheckPiiConfiguration::class,
+        \App\Console\Commands\EncryptExistingOwnerPii::class,
+        \App\Console\Commands\VerifyOwnerPiiEncryption::class,
+        \App\Console\Commands\EncryptExistingApplicationCustomerPii::class,
+        \App\Console\Commands\VerifyApplicationCustomerPiiEncryption::class,
+        \App\Console\Commands\EncryptExistingPropertyTaxOwnerPii::class,
+        \App\Console\Commands\VerifyPropertyTaxOwnerPiiEncryption::class,
         \App\Console\Commands\KpiCron::class,
 
         // update table counts
