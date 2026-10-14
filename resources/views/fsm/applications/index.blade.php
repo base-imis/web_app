@@ -292,6 +292,8 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             <th>{{ __('Ward Number') }}</th>
                             <th>{{ __('Applicant Name') }}</th>
                             <th>{{ __('Applicant Contact') }}</th>
+                            <th>{{ __('Owner Name') }}</th>
+                            <th>{{ __('Owner Contact') }}</th>
                             <th>{{ __('Service Provider Name') }}</th>
                             <th>{{ __('Application Date') }}</th>
                             <th>{{ __('Proposed Emptying Date') }}</th>
@@ -725,6 +727,8 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                     { data: 'ward', name: 'ward' },
                     { data: 'applicant_name', name: 'applicant_name' },
                     { data: 'applicant_contact', name: 'applicant_contact' },
+                    { data: 'customer_name', name: 'customer_name', orderable: false, searchable: false },
+                    { data: 'customer_contact', name: 'customer_contact', orderable: false, searchable: false },
                     { data: 'service_provider_id', name: 'service_provider_id' },
                     { 
                         data: 'application_date', 

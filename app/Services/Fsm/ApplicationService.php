@@ -1027,6 +1027,10 @@ class ApplicationService
      */
     public function getAllApplications(Request $request)
     {
+        // Select only columns consumed by the table. Applicant name/contact
+        // are operational fields displayed by the v2.0.3 Application list.
+        // Customer gender remains excluded, while customer name/contact are
+        // passed through the masking/reveal callbacks below.
         $columns = [
             'applications.id',
             'applications.bin',
@@ -1034,9 +1038,12 @@ class ApplicationService
             'applications.application_date',
             'applications.proposed_emptying_date',
             'applications.road_code',
+            'applications.applicant_name',
+            'applications.applicant_contact',
             'applications.emptying_status',
             'applications.sludge_collection_status',
             'applications.feedback_status',
+            'applications.trip_count',
             'applications.customer_name',
             'applications.customer_contact',
             'applications.ward',
