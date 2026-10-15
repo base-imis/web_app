@@ -60,7 +60,9 @@ Route::group(['middleware' => ['guest']], function () {
      * Login Routes
      */
     Route::get('/login', 'Auth\LoginController@show')->name('login.show');
-    Route::post('/login', 'Auth\LoginController@login')->name('login.perform');
+    Route::post('/login', 'Auth\LoginController@login')
+        ->middleware('throttle:web-login')
+        ->name('login.perform');
 
     // Password Reset Routes...
     Route::get('password/reset', 'Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
