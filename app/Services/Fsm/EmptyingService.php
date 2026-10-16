@@ -36,6 +36,7 @@ use DataTables;
 use Throwable;
 use App\Models\Notification;
 use App\Models\User;
+use App\Helpers\ImageOptimizationHelper;
 
 class EmptyingService
 {
@@ -315,7 +316,7 @@ class EmptyingService
 
             if ($application->trip_count == $emptying->trip_no + 1) {
                 $folderPathBuildJpg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpg');
-                $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpgeg');
+                $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpeg');
                 $imagePathBuildJpg = 'storage/emptyings/houses/' . $application->bin . '.jpg';
                 $imagePathBuildJpeg = 'storage/emptyings/houses/' . $application->bin . '.jpeg';
                 if (file_exists($folderPathBuildJpg) == true) {
@@ -602,7 +603,7 @@ class EmptyingService
         $containment = Containment::findOrFail($application->containment_id);
         // houses
         $folderPathBuildJpg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpg');
-        $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpgeg');
+        $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpeg');
         $imagePathBuildJpg = 'storage/emptyings/houses/' . $application->bin . '.jpg';
         $imagePathBuildJpeg = 'storage/emptyings/houses/' . $application->bin . '.jpeg';
         if (file_exists($folderPathBuildJpg) == true) {
@@ -1588,13 +1589,21 @@ class EmptyingService
                         "/public/emptyings/houses/{$new_archived_filename}"
                     );
                 }
-                $storeHouseImg = Image::make($request->house_image)
-                    ->save(Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"), 50);
+                ImageOptimizationHelper::optimizeAndSave(
+                    $request->house_image,
+                    Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"),
+                    1600,
+                    70
+                );
                 $emptying->house_image = $filename_house;
                 $filename_receipt = "{$emptying->id}_{$emptying->application_id}_{$emptying->receipt_number}_{$dateTime}.{$extension_receipt}";
 
-                $storeReceiptImg = Image::make($request->receipt_image)
-                    ->save(Storage::disk('local')->path("/public/emptyings/receipts/{$filename_receipt}"), 50);
+                ImageOptimizationHelper::optimizeAndSave(
+                    $request->receipt_image,
+                    Storage::disk('local')->path("/public/emptyings/receipts/{$filename_receipt}"),
+                    1600,
+                    70
+                );
                 // Assign image paths to emptying
                 $emptying->receipt_image  = $filename_receipt;
                 $emptying->house_image    = $filename_house;
@@ -1770,7 +1779,12 @@ foreach ($recipientIds as $userId) {
                     if ($check) {
                         try {
                             $filename_receipt = $emptying->id . '_' . $emptying->application_id . '_' . $emptying->receipt_number . '_' . $dateTime . '.' . $extension_receipt;
-                            $storeReceiptImg = Image::make($request->receipt_image)->save(Storage::disk('local')->path('/public/emptyings/receipts/' . $filename_receipt), 50);
+                            ImageOptimizationHelper::optimizeAndSave(
+                                $request->receipt_image,
+                                Storage::disk('local')->path('/public/emptyings/receipts/' . $filename_receipt),
+                                1600,
+                                70
+                            );
                             if (!Storage::disk('local')->exists('/public/emptyings/receipts/' . $filename_receipt)) {
                                 return redirect()->back()->withInput()->with('error', __("Error! Unable to save receipt image."));
                             }
@@ -1801,8 +1815,12 @@ foreach ($recipientIds as $userId) {
                                     "/public/emptyings/houses/{$new_archived_filename}"
                                 );
                             }
-                            $storeHouseImg = Image::make($request->house_image)
-                                ->save(Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"), 50);
+                            ImageOptimizationHelper::optimizeAndSave(
+                                $request->house_image,
+                                Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"),
+                                1600,
+                                70
+                            );
                             $emptying->house_image = $filename_house;
                         } catch (\Throwable $th) {
                             DB::rollBack();

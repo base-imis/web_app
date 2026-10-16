@@ -393,6 +393,95 @@ function selectAnfBuilding(bin, containmentId) {
         }
     }
 
+    function handleImagePreview(input, previewId, hintId, feedbackId) {
+        var preview = document.getElementById(previewId);
+        var hint = document.getElementById(hintId);
+        var feedback = document.getElementById(feedbackId);
+        var file = input.files && input.files[0];
+
+        function resetToDefault() {
+            if (!preview) return;
+            var defaultSrc = preview.getAttribute('data-default-src');
+            if (defaultSrc) {
+                preview.src = defaultSrc;
+                preview.classList.remove('d-none');
+            } else {
+                preview.src = '#';
+                preview.classList.add('d-none');
+            }
+        }
+
+        function setHintStatus(hintElement, status) {
+            if (!hintElement) return;
+            if (status === 'success') {
+                hintElement.classList.remove('text-muted', 'text-danger');
+                hintElement.classList.add('text-success');
+                hintElement.style.color = '#28a745';
+            } else if (status === 'error') {
+                hintElement.classList.remove('text-muted', 'text-success');
+                hintElement.classList.add('text-danger');
+                hintElement.style.color = '#dc3545';
+            } else {
+                hintElement.classList.remove('text-success', 'text-danger');
+                hintElement.classList.add('text-muted');
+                hintElement.style.color = '';
+            }
+        }
+
+        if (!file) {
+            resetToDefault();
+            if (feedback) feedback.textContent = '';
+            setHintStatus(hint, 'default');
+            return;
+        }
+
+        var extensionIsValid = /\.(jpe?g)$/i.test(file.name);
+        var mimeIsValid = !file.type || file.type === 'image/jpeg' || file.type === 'image/jpg';
+
+        if (!extensionIsValid || !mimeIsValid) {
+            input.value = '';
+            var label = input.nextElementSibling;
+            if (label && label.classList.contains('custom-file-label')) {
+                label.textContent = 'Choose file';
+            }
+            resetToDefault();
+            setHintStatus(hint, 'error');
+            if (feedback) {
+                feedback.textContent = 'Only JPG or JPEG images are allowed.';
+                feedback.className = 'file-feedback mt-1 text-danger';
+            }
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            input.value = '';
+            var label = input.nextElementSibling;
+            if (label && label.classList.contains('custom-file-label')) {
+                label.textContent = 'Choose file';
+            }
+            resetToDefault();
+            setHintStatus(hint, 'error');
+            if (feedback) {
+                feedback.textContent = 'Image size should not be more than 5MB.';
+                feedback.className = 'file-feedback mt-1 text-danger';
+            }
+            return;
+        }
+
+        if (preview._previewUrl) {
+            URL.revokeObjectURL(preview._previewUrl);
+        }
+        preview._previewUrl = URL.createObjectURL(file);
+        preview.src = preview._previewUrl;
+        preview.classList.remove('d-none');
+
+        setHintStatus(hint, 'success');
+        if (feedback) {
+            feedback.textContent = '';
+            feedback.className = 'file-feedback mt-1 text-success';
+        }
+    }
+
     $(document).ready(function() {
         $('#proposed_emptying_date').daterangepicker({
             minDate: moment(), singleDatePicker: true, autoUpdateInput: false,
@@ -417,10 +506,10 @@ function selectAnfBuilding(bin, containmentId) {
         }
         $('#address').on('change', onAddressChange);
         $('#house_image').on('change', function() {
-            validateFileSize(document.querySelector('#house_image'),'fileSizeHintImg','5');
+            handleImagePreview(this, 'houseImagePreview', 'fileSizeHintImg', 'houseImageFeedback');
         });
         $('#receipt_image').on('change', function() {
-            validateFileSize(document.querySelector('#receipt_image'),'fileSizeRintImg','5');
+            handleImagePreview(this, 'receiptImagePreview', 'fileSizeRintImg', 'receiptImageFeedback');
         });
     });
 </script>
@@ -432,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('input[name="trip_count"]:not([type="hidden"])') ||
         document.getElementById('trip_count');
     const tripNoField =
-        document.querySelector('#tr ip_no:not([type="hidden"])') ||
+        document.querySelector('#trip_no:not([type="hidden"])') ||
         document.querySelector('input[name="trip_no"]:not([type="hidden"])') ||
         document.getElementById('trip_no');
     const receiptFieldIds = ['receipt_number', 'total_cost', 'house_image', 'receipt_image'];
@@ -451,6 +540,11 @@ document.addEventListener('DOMContentLoaded', function () {
             field.value = '';
             const label = field.closest('.custom-file')?.querySelector('.custom-file-label');
             if (label) label.textContent = 'Choose file';
+            if (field.id === 'house_image') {
+                handleImagePreview(field, 'houseImagePreview', 'fileSizeHintImg', 'houseImageFeedback');
+            } else if (field.id === 'receipt_image') {
+                handleImagePreview(field, 'receiptImagePreview', 'fileSizeRintImg', 'receiptImageFeedback');
+            }
         }
     }
     function getCurrentTripCount() {
