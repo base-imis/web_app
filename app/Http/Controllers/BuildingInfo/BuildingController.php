@@ -197,7 +197,7 @@ class BuildingController extends Controller
         $status = LicStatus::getDescription($building->is_lic);
         $containment = $building->containments[0] ?? null;
         $folderPathJpg = public_path('/storage/emptyings/houses/'. $building->bin . '.jpg');
-        $folderPathJpeg = public_path('/storage/emptyings/houses/'. $building->bin . '.jpgeg');
+        $folderPathJpeg = public_path('/storage/emptyings/houses/'. $building->bin . '.jpeg');
         $imagePathJpg = 'storage/emptyings/houses/' . $building->bin . '.jpg';
         $imagePathJpeg = 'storage/emptyings/houses/' . $building->bin . '.jpeg';
         if(file_exists($folderPathJpg) == true)

@@ -266,7 +266,8 @@ class BuildingSurveyController extends Controller
                     $xml->load($kml);
                     $polygons = $xml->getElementsByTagName('Polygon');
                     if($polygons->length > 0) {
-                        $isValidKml = DB::select("SELECT ST_IsValid(ST_GeomFromKML('".$this->innerHTML($polygons[0])."')) AS status");
+                        $polygonXml = $this->innerHTML($polygons[0]);
+                        $isValidKml = DB::select("SELECT ST_IsValid(ST_GeomFromKML(?)) AS status", [$polygonXml]);
                         if ($isValidKml[0]->status){
                             $filename = $buildingSurvey->temp_building_code . '_' . $buildingSurvey->collected_date . '.kml';
                             $storeKml = $kml->storeAs('/public/building-survey-kml', $filename, 'local');
