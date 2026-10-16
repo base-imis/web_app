@@ -307,27 +307,69 @@ A dynamic form layout
                 @endif
                @if($formField->inputType === 'file_upload')
                     @if($formField->inputId === 'house_image' )
-                            <div class="custom-file">
-                                <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept="image/*">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept=".jpg,.jpeg,image/jpeg">
                             <label class="custom-file-label" for="{{ $formField->inputId }}">
                                 {{ $formField->inputValue ? basename($formField->inputValue) : 'Choose file' }}
                             </label>
                         </div>
-                       @if(!empty($formField->inputValue))
-                        <input type="hidden" name="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
+                        @if(!empty($formField->inputValue))
+                            <input type="hidden" name="{{ $formField->inputId }}_existing" id="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
                         @endif
-                        <small class="form-text" id="fileSizeHintImg">(Image (JPG, JPEG) size should not be more than 5MB)</small>
+                        <small class="form-text text-muted" id="fileSizeHintImg">{{ __('Image (JPG, JPEG) size should not be more than 5MB.') }}</small>
+                        <div id="houseImageFeedback" class="file-feedback mt-1" role="status" aria-live="polite"></div>
+                        @php
+                            $houseImageSrc = null;
+                            if (!empty($formField->inputValue)) {
+                                if (file_exists(public_path('storage/emptyings/houses/' . basename($formField->inputValue)))) {
+                                    $houseImageSrc = asset('storage/emptyings/houses/' . basename($formField->inputValue));
+                                } elseif (file_exists(public_path($formField->inputValue))) {
+                                    $houseImageSrc = asset($formField->inputValue);
+                                }
+                            }
+                        @endphp
+                        <div>
+                            <img
+                                id="houseImagePreview"
+                                class="img-thumbnail mt-2 {{ $houseImageSrc ? '' : 'd-none' }}"
+                                style="max-width: 320px; max-height: 240px; object-fit: contain;"
+                                src="{{ $houseImageSrc ?? '#' }}"
+                                data-default-src="{{ $houseImageSrc ?? '' }}"
+                                alt="{{ __('Selected house image preview') }}"
+                            >
+                        </div>
                     @elseif($formField->inputId === 'receipt_image')
-                          <div class="custom-file">
-                                <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept="image/*">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept=".jpg,.jpeg,image/jpeg">
                             <label class="custom-file-label" for="{{ $formField->inputId }}">
                                 {{ $formField->inputValue ? basename($formField->inputValue) : 'Choose file' }}
                             </label>
                         </div>
-                       @if(!empty($formField->inputValue))
-                        <input type="hidden" name="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
+                        @if(!empty($formField->inputValue))
+                            <input type="hidden" name="{{ $formField->inputId }}_existing" id="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
                         @endif
-                        <small class="form-text" id="fileSizeRintImg">(Image (JPG, JPEG) size should not be more than 5MB)</small>
+                        <small class="form-text text-muted" id="fileSizeRintImg">{{ __('Image (JPG, JPEG) size should not be more than 5MB.') }}</small>
+                        <div id="receiptImageFeedback" class="file-feedback mt-1" role="status" aria-live="polite"></div>
+                        @php
+                            $receiptImageSrc = null;
+                            if (!empty($formField->inputValue)) {
+                                if (file_exists(public_path('storage/emptyings/receipts/' . basename($formField->inputValue)))) {
+                                    $receiptImageSrc = asset('storage/emptyings/receipts/' . basename($formField->inputValue));
+                                } elseif (file_exists(public_path($formField->inputValue))) {
+                                    $receiptImageSrc = asset($formField->inputValue);
+                                }
+                            }
+                        @endphp
+                        <div>
+                            <img
+                                id="receiptImagePreview"
+                                class="img-thumbnail mt-2 {{ $receiptImageSrc ? '' : 'd-none' }}"
+                                style="max-width: 320px; max-height: 240px; object-fit: contain;"
+                                src="{{ $receiptImageSrc ?? '#' }}"
+                                data-default-src="{{ $receiptImageSrc ?? '' }}"
+                                alt="{{ __('Selected receipt image preview') }}"
+                            >
+                        </div>
                     @else
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}">
