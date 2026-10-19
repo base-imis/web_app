@@ -88,19 +88,21 @@ class RouteServiceProvider extends ServiceProvider
             ], 429, $headers);
         };
 
-        $loginLimits = function (
+        $requestLimits = function (
             Request $request,
             string $identifierField,
             string $keyPrefix,
-            callable $response
+            callable $response,
+            string $configuration = 'login_rate_limit'
         ) {
-            $identifier = Str::lower(trim((string) $request->input($identifierField)));
+            $input = $request->input($identifierField);
+            $identifier = Str::lower(trim(is_string($input) ? $input : ''));
             $identifierHash = hash('sha256', $identifier);
             $ip = $request->ip();
 
-            $identityIp = config('security.login_rate_limit.identity_ip');
-            $ipOnly = config('security.login_rate_limit.ip');
-            $identityOnly = config('security.login_rate_limit.identity');
+            $identityIp = config('security.'.$configuration.'.identity_ip');
+            $ipOnly = config('security.'.$configuration.'.ip');
+            $identityOnly = config('security.'.$configuration.'.identity');
 
             return [
                 Limit::perMinutes(
@@ -118,12 +120,37 @@ class RouteServiceProvider extends ServiceProvider
             ];
         };
 
-        RateLimiter::for('web-login', function (Request $request) use ($loginLimits, $webLoginLimitResponse) {
-            return $loginLimits($request, 'username', 'web-login', $webLoginLimitResponse);
+        RateLimiter::for('web-login', function (Request $request) use ($requestLimits, $webLoginLimitResponse) {
+            return $requestLimits($request, 'username', 'web-login', $webLoginLimitResponse);
         });
 
-        RateLimiter::for('api-login', function (Request $request) use ($loginLimits, $apiLoginLimitResponse) {
-            return $loginLimits($request, 'email', 'api-login', $apiLoginLimitResponse);
+        RateLimiter::for('api-login', function (Request $request) use ($requestLimits, $apiLoginLimitResponse) {
+            return $requestLimits($request, 'email', 'api-login', $apiLoginLimitResponse);
+        });
+
+        $formLimitResponse = function (string $messageKey, string $errorKey, array $fields, bool $contact) {
+            return function (Request $request, array $headers) use ($messageKey, $errorKey, $fields, $contact) {
+                $message = trans($messageKey, ['seconds' => (int) $headers['Retry-After']]);
+
+                if ($request->expectsJson()) {
+                    return response()->json(['status' => false, 'message' => $message], 429, $headers);
+                }
+
+                return redirect($contact ? url('/').'#contact' : route('password.request'))
+                    ->withErrors([$errorKey => $message])
+                    ->withInput($request->only($fields))
+                    ->withHeaders($headers);
+            };
+        };
+
+        $passwordResetResponse = $formLimitResponse('forms.password_reset_throttle', 'email', ['email'], false);
+        RateLimiter::for('password-reset', function (Request $request) use ($requestLimits, $passwordResetResponse) {
+            return $requestLimits($request, 'email', 'password-reset', $passwordResetResponse, 'password_reset_rate_limit');
+        });
+
+        $contactResponse = $formLimitResponse('forms.contact_throttle', 'contact_rate_limit', ['name', 'email', 'subject', 'message'], true);
+        RateLimiter::for('contact', function (Request $request) use ($requestLimits, $contactResponse) {
+            return $requestLimits($request, 'email', 'contact', $contactResponse, 'contact_rate_limit');
         });
 
     }
