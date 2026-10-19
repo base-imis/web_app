@@ -46,7 +46,9 @@ Route::post('/files/upload', 'FileController@upload')->name('files.upload');
 
 
 
-Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
+Route::post('/contact/send', [ContactController::class, 'send'])
+    ->middleware('throttle:contact')
+    ->name('contact.send');
 
 
 Route::group(['middleware' => ['guest']], function () {
@@ -66,7 +68,9 @@ Route::group(['middleware' => ['guest']], function () {
 
     // Password Reset Routes...
     Route::get('password/reset', 'Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
-    Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail')->name('password.email');
+    Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail')
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
     Route::get('password/reset/{token}', 'Auth\ResetPasswordController@showResetForm')->name('password.reset');
     Route::post('password/reset', 'Auth\ResetPasswordController@reset')->name('password.update');
 });
