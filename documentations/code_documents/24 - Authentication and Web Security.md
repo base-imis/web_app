@@ -130,9 +130,43 @@ The public message is defined by `passwords.request_received` in `resources/lang
 
 For registered and unregistered valid addresses, web requests must have matching status, redirect destination, session message, and absence of account-specific validation errors. JSON requests must return HTTP 200 with the same `message` body. Missing or invalid emails still receive normal validation errors. Eligible registered accounts receive reset notifications; unknown and soft-deleted accounts do not.
 
-This remediation addresses public wording and response structure. It does not claim constant response timing, change reset-token formats, or replace the existing password broker's eligibility rules. No new password-reset rate limiter is part of BASEIMIS-47.
+This remediation addresses public wording and response structure. It does not claim constant response timing, change reset-token formats, or replace the existing password broker's eligibility rules. The reviewer-requested form throttling described below is an additional abuse control; it applies equally to registered and unknown email addresses.
 
 DevOps must verify mail delivery and the public reset-link address. If notifications use a background queue, confirm its workers run. Keep `APP_DEBUG=false` in production to avoid exposing development error details. Supply real mail/Redis secrets through the existing secure configuration system, not in documentation or shareable templates.
+
+## 4. Forgot Password and Contact Us Rate Limiting
+
+Reviewer follow-up: apply the login limiter's three-layer approach to Forgot Password and the Contact Us form at the bottom of the landing page.
+
+| Form | Protected route | Named limiter | Configuration |
+|---|---|---|---|
+| Forgot Password | `POST /password/email` | `password-reset` | `security.password_reset_rate_limit` |
+| Contact Us | `POST /contact/send` | `contact` | `security.contact_rate_limit` |
+
+Each form independently defaults to 5 requests per minute for the same normalized email/IP, 20 requests per minute per IP across emails, and 15 requests per 15 minutes per normalized email across IPs. Email values are trimmed, lowercased, and hashed in keys. The counters are independent of each other and the web/API login counters. All submissions admitted by the limiter count, including requests that subsequently fail validation. Invalid or non-string email input still consumes the IP control.
+
+Limiter checks happen before controller processing. Blocked requests do not call the password broker or Contact Us mail service. Restrictions expire automatically. The password broker's existing notification cooldown remains separate; receiving the generic acknowledgement does not promise that a new email is sent on every request.
+
+For browsers, blocked reset requests redirect to the reset form with an `email` validation error. Blocked Contact Us requests redirect to `/#contact` with a visible `contact_rate_limit` error. Only allowlisted form inputs are flashed, and the contact form escapes restored values. Both responses include `Retry-After`. Requests expecting JSON receive HTTP 429 with `status: false`, a generic translated `message`, and `Retry-After`.
+
+Add these environment names to deployment templates, with approved values:
+
+```dotenv
+PASSWORD_RESET_RATE_LIMIT_IDENTITY_IP_ATTEMPTS=5
+PASSWORD_RESET_RATE_LIMIT_IDENTITY_IP_DECAY_MINUTES=1
+PASSWORD_RESET_RATE_LIMIT_IP_ATTEMPTS=20
+PASSWORD_RESET_RATE_LIMIT_IP_DECAY_MINUTES=1
+PASSWORD_RESET_RATE_LIMIT_IDENTITY_ATTEMPTS=15
+PASSWORD_RESET_RATE_LIMIT_IDENTITY_DECAY_MINUTES=15
+CONTACT_RATE_LIMIT_IDENTITY_IP_ATTEMPTS=5
+CONTACT_RATE_LIMIT_IDENTITY_IP_DECAY_MINUTES=1
+CONTACT_RATE_LIMIT_IP_ATTEMPTS=20
+CONTACT_RATE_LIMIT_IP_DECAY_MINUTES=1
+CONTACT_RATE_LIMIT_IDENTITY_ATTEMPTS=15
+CONTACT_RATE_LIMIT_IDENTITY_DECAY_MINUTES=15
+```
+
+These settings use the same explicit trusted-proxy and shared-cache requirements as login. DevOps must rebuild the configuration cache after deployment. QA should verify the sixth same-email/IP request is blocked at the defaults, rotating emails cannot bypass the IP limit, rotating IPs cannot bypass the email limit, counters remain separate between forms/login, blocks expire, and registered/unknown reset requests remain publicly equivalent. Test email delivery only in an approved test environment.
 
 ## Testing and Acceptance
 
@@ -141,6 +175,7 @@ The prepared suites and fixtures are:
 | Test file | Primary coverage |
 |---|---|
 | `tests/Feature/LoginRateLimitingTest.php` | Allowed/blocked attempts, keys, expiry, endpoint separation, and trusted proxies |
+| `tests/Feature/PublicFormRateLimitingTest.php` | Reset/contact controls, blocked service calls, JSON 429, web messages, key separation, validation, and expiry |
 | `tests/Feature/Http/Controllers/LoginControllerTest.php` | Credential/input contracts, page controls, role rules, and API response contracts using controlled test doubles |
 | `tests/Feature/LoginSecurityHardeningTest.php` | Login throttle and header regression checks |
 | `tests/Feature/Http/Middleware/PreventClickjackingTest.php` | HTML/error responses, existing CSP preservation, conflicts, and non-HTML behavior |
@@ -151,7 +186,7 @@ Fixtures are under `tests/Fixtures/Login`, `tests/Fixtures/Clickjacking`, and `t
 After integrating the application fixes, run:
 
 ```text
-php artisan test --filter="LoginControllerTest|LoginRateLimitingTest|LoginSecurityHardeningTest|PreventClickjackingTest|ForgotPasswordControllerTest"
+php artisan test --filter="LoginControllerTest|LoginRateLimitingTest|LoginSecurityHardeningTest|PreventClickjackingTest|ForgotPasswordControllerTest|PublicFormRateLimitingTest"
 ```
 
 Use a dedicated test database for database-backed tests; transactions alone do not isolate an existing development database. `ForgotPasswordControllerTest` creates its own SQLite in-memory user and password-reset tables before beginning its test transactions. It requires PDO SQLite and does not exercise the full PostgreSQL/PostGIS schema. Run the combined suite on the actual release branch. Mocked token/authentication assertions do not prove real database credential lookup or persisted token creation. Local tests do not establish production proxy, Redis, browser, or mail behavior.
