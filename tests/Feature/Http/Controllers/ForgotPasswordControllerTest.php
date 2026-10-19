@@ -194,6 +194,30 @@ class ForgotPasswordControllerTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_rate_limit_is_identical_for_registered_and_unknown_emails(): void
+    {
+        Notification::fake();
+        $user = $this->createResettableUser('limited-known@example.test');
+        $unknownEmail = 'limited-unknown@example.test';
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->postJson(route('password.email'), ['email' => $user->email])
+                ->assertOk()->assertJsonPath('message', trans('passwords.request_received'));
+            $this->postJson(route('password.email'), ['email' => $unknownEmail])
+                ->assertOk()->assertJsonPath('message', trans('passwords.request_received'));
+        }
+
+        $known = $this->postJson(route('password.email'), ['email' => $user->email]);
+        $unknown = $this->postJson(route('password.email'), ['email' => $unknownEmail]);
+        $known->assertStatus(429)->assertHeader('Retry-After')->assertJsonPath('status', false);
+        $unknown->assertStatus(429)->assertHeader('Retry-After')->assertJsonPath('status', false);
+        $this->assertSame(array_keys($known->json()), array_keys($unknown->json()));
+        $this->assertStringContainsString('Too many password reset requests.', $known->json('message'));
+        $this->assertStringContainsString('Too many password reset requests.', $unknown->json('message'));
+        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTimes(ResetPassword::class, 1);
+    }
+
     public function test_public_response_never_uses_account_not_found_wording(): void
     {
         $case = $this->fixtureCase('ForgotPassword/forgot_password.json', 'unregistered valid email');
