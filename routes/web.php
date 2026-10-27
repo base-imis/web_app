@@ -10,6 +10,11 @@ use App\Http\Controllers\Fsm\ApplicationController;
 use App\Http\Controllers\Api\ApiServiceController;
 use App\Http\Controllers\MapsController;
 use App\Http\Controllers\Proxy\WMSProxyController;
+use App\Http\Controllers\PlacesController;
+use App\Models\Places;
+use App\Http\Controllers\GISProxyController;
+use App\Http\Controllers\GISExportController;
+use App\Http\Controllers\GISPrintController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +76,14 @@ Route::group([
     'middleware' => 'auth'
 ], function () {
     Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+});
+
+Route::middleware('auth')->prefix('gis')->group(function () {
+    Route::get('/wms', [GISProxyController::class, 'wms'])->name('gis.wms');
+    Route::get('/wfs', [GISProxyController::class, 'wfs'])->name('gis.wfs');
+    Route::get('/export/{format}', [GISExportController::class, 'export'])
+        ->where('format', 'csv|kml|shp')->name('gis.export');
+    Route::post('/print', [GISPrintController::class, 'print'])->name('gis.print');
 });
 
 /**
@@ -448,13 +461,22 @@ Route::group([
      * Application Routes
      *
      */
-    Route::get('application/getData', 'ApplicationController@getData')->name('application.get-data');
+        Route::get('application/getData', 'ApplicationController@getData')->name('application.get-data');
     Route::get('application/export', 'ApplicationController@export')->name('application.export');
     Route::get('application/{id}/history', 'ApplicationController@history')->name('application.history');
     Route::get('application/getBuildingDetails', 'ApplicationController@buildingDetails')->name('application.get-building-details');
+    Route::get('application/vehicles-by-provider', [ApplicationController::class, 'getVehiclesByServiceProvider'])->name('application.vehicles-by-provider');
     Route::get('application/pdf/{year}/{month}/monthly-report', 'ApplicationController@monthlyApplicationsPdf');
     Route::get('application/{id}/application-report', 'ApplicationController@applicationReport')->name('application.report');
+    Route::get('emptying-scheduling/{id}', 'ApplicationController@editScheduling')->name('emptying-scheduling');
+    Route::patch('emptying-scheduling/{id}/store', 'ApplicationController@schedulingform')->name('emptying-scheduling.store');
+    Route::post('/sequence/by-capacity', [ApplicationController::class, 'byCapacity'])->name('sequence.byCapacity');
+    Route::get('/capacity-by-date/{application}', [ApplicationController::class, 'checkCapacityByDate'])->name('applications.capacity-by-date');
+    Route::get('/application/{id}/force-delete', [ApplicationController::class, 'forceDelete'])
+        ->name('application.forceDelete');
+    Route::patch('applications/{id}/resolve-anf', [ApplicationController::class, 'resolveAnf'])->name('application.resolve-anf');  
     Route::get('/service-provider/{service_provider_id}', 'ApplicationController@getServiceProvider');
+    Route::get('/treatment-plant', [ApplicationController::class, 'getTreatmentPlant'])->name('application.treatment-plant');
     Route::resource('application', 'ApplicationController');
 
     /**
@@ -482,9 +504,12 @@ Route::group([
      *
      */
     Route::get('sludge-collection/create/{id}', 'SludgeCollectionController@create')->name('sludge-collection.create-id');
+    Route::get('sludge-collection/create-log/{id}', 'SludgeCollectionController@createLog')->name('sludge-collection.create-log-id');
     Route::get('sludge-collection/getData', 'SludgeCollectionController@getData')->name('sludge-collection.get-data');
+    Route::get('sludge-collection-log/getData', 'SludgeCollectionController@getData')->name('sludge-collection.get-data-log');
     Route::get('sludge-collection/export', 'SludgeCollectionController@export');
     Route::get('sludge-collection/{id}/history', 'SludgeCollectionController@history');
+    Route::get('sludge-collection/{id}/show-details', 'SludgeCollectionController@showDetails')->name('sludge-collection.show-details');
 
 
     Route::resource('sludge-collection', 'SludgeCollectionController');
@@ -580,6 +605,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('maps/check-location-within-boundary','MapsController@checkLocationWithinBoundary');
     Route::get('maps/toilet-isochrone', 'MapsController@getToiletIsochroneAreaLayers');
    Route::get('/proxy-wms', 'MapsController@proxyWms')->middleware('throttle:20,1');
+
+    Route::get('places/data', 'PlacesController@getData')->name('places.getData');
+    Route::get('places/export', 'PlacesController@export')->name('places.export');
+    Route::resource('places', 'PlacesController');
 
 });
 
