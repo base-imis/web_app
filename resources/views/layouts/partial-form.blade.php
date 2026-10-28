@@ -321,10 +321,12 @@ A dynamic form layout
                         @php
                             $houseImageSrc = null;
                             if (!empty($formField->inputValue)) {
-                                if (file_exists(public_path('storage/emptyings/houses/' . basename($formField->inputValue)))) {
-                                    $houseImageSrc = asset('storage/emptyings/houses/' . basename($formField->inputValue));
+                                $storedHouseImage = public_path('storage/emptyings/houses/' . basename($formField->inputValue));
+                                if (file_exists($storedHouseImage)) {
+                                    $houseImageSrc = asset('storage/emptyings/houses/' . basename($formField->inputValue)) . '?v=' . filemtime($storedHouseImage);
                                 } elseif (file_exists(public_path($formField->inputValue))) {
-                                    $houseImageSrc = asset($formField->inputValue);
+                                    $fallbackHouseImage = public_path($formField->inputValue);
+                                    $houseImageSrc = asset($formField->inputValue) . '?v=' . filemtime($fallbackHouseImage);
                                 }
                             }
                         @endphp
@@ -353,10 +355,12 @@ A dynamic form layout
                         @php
                             $receiptImageSrc = null;
                             if (!empty($formField->inputValue)) {
-                                if (file_exists(public_path('storage/emptyings/receipts/' . basename($formField->inputValue)))) {
-                                    $receiptImageSrc = asset('storage/emptyings/receipts/' . basename($formField->inputValue));
+                                $storedReceiptImage = public_path('storage/emptyings/receipts/' . basename($formField->inputValue));
+                                if (file_exists($storedReceiptImage)) {
+                                    $receiptImageSrc = asset('storage/emptyings/receipts/' . basename($formField->inputValue)) . '?v=' . filemtime($storedReceiptImage);
                                 } elseif (file_exists(public_path($formField->inputValue))) {
-                                    $receiptImageSrc = asset($formField->inputValue);
+                                    $fallbackReceiptImage = public_path($formField->inputValue);
+                                    $receiptImageSrc = asset($formField->inputValue) . '?v=' . filemtime($fallbackReceiptImage);
                                 }
                             }
                         @endphp

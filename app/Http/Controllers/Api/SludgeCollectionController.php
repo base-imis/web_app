@@ -212,7 +212,9 @@ class SludgeCollectionController extends Controller
             $app->geometry = $app->geometry_raw ? json_decode($app->geometry_raw) : null;
             unset($app->geometry_raw);
 
-            $app->image_status = Storage::disk('public')->exists("emptyings/houses/{$app->bin}.jpg");
+            $app->image_status = collect(['jpg', 'jpeg', 'JPG', 'JPEG'])->contains(
+                fn ($extension) => Storage::disk('public')->exists("emptyings/houses/{$app->bin}.{$extension}")
+            );
 
             // frontend helpers
             $app->can_add_sludge_collection =
