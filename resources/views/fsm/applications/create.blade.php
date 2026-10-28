@@ -119,8 +119,8 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             localStorage.removeItem("applicant_contact");
         }
 
-        if ($('#customer_name').val() != '' && $('#customer_gender').val() != '' ) {
-            $('#autofill-wrapper').show();
+        if (typeof updateSameAsOwnerVisibility === 'function') {
+            updateSameAsOwnerVisibility();
         }
  
     } else {
@@ -154,8 +154,10 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             localStorage.removeItem("applicant_contact");
         }
 
-        // Hide "Same as Owner" checkbox in Applicant Details
-        $('#autofill-wrapper').hide();
+        // ANF applications do not have a verified building owner to copy.
+        if (typeof updateSameAsOwnerVisibility === 'function') {
+            updateSameAsOwnerVisibility();
+        }
     }
 
     // Scheduled application address fields are always view-only, even if the
@@ -179,6 +181,22 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
     const scheduleBinText = @json($scheduleBinText ?? null);
     const ownerPiiMask = '********';
     let ownerPiiRevealed = false;
+
+    function updateSameAsOwnerVisibility() {
+        const hasOwnerName = $.trim(String($('#customer_name').val() || '')) !== '';
+        const hasOwnerGender = $.trim(String($('#customer_gender').val() || '')) !== '';
+        const canCopyOwner = ownerPiiRevealed &&
+            hasOwnerName &&
+            hasOwnerGender &&
+            $('#is_anf').val() !== '1';
+
+        $('#autofill-wrapper').toggle(canCopyOwner);
+        $('#autofill').prop('disabled', !canCopyOwner);
+
+        if (!canCopyOwner) {
+            $('#autofill').prop('checked', false);
+        }
+    }
 
     function autoFillDetails() {
         $(document).ready(function() {
@@ -244,7 +262,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             }))
             .prop('disabled', true);
 
-        $('#autofill').prop('checked', false).prop('disabled', true);
+        updateSameAsOwnerVisibility();
     }
 
     function applyOwnerPiiFromBuildingLookup(response) {
@@ -276,8 +294,9 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
         // This flag controls only the Same as Owner convenience checkbox. It
         // is not an authorization decision and is reset whenever the BIN is
         // changed or the server reports that the grant expired.
-        ownerPiiRevealed = true;
-        $('#autofill').prop('disabled', false);
+        ownerPiiRevealed = $.trim(String(response.customer_name || '')) !== '' &&
+            $.trim(String(response.customer_gender || '')) !== '';
+        updateSameAsOwnerVisibility();
     }
 
     function lockConfirmAddressFields() {
@@ -360,10 +379,9 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
         $("input[name='applicant_name']").val('').removeAttr('disabled');
         $("#applicant_gender").val('').removeAttr('disabled');
         $("input[name='applicant_contact']").val('').removeAttr('disabled');
-        $("input[name='autofill']").prop('checked', false).prop('disabled', true);
-        $('#autofill-wrapper').hide();
-        $('#containment_info, #accessibility_info').remove();
         ownerPiiRevealed = false;
+        updateSameAsOwnerVisibility();
+        $('#containment_info, #accessibility_info').remove();
     }
 
     function onAddressChange() {
@@ -639,16 +657,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 
         $('#bin').on('change', onAddressChange);
         $('#customer_name, #customer_gender, #customer_contact').on('change keyup input', function() {
-            if ($('#customer_name').val() != '' && $('#customer_gender').val() != '' ) {
-                if ($('#is_anf').val() !== '1') {
-                    $('#autofill-wrapper').show();
-                }
-            } else {
-                $('#autofill-wrapper').hide();
-                if ($('#autofill').is(':checked')) {
-                    $('#autofill').prop('checked', false);
-                }
-            }
+            updateSameAsOwnerVisibility();
         });
 
        $('#create_application_form').on('submit', function (e) {
