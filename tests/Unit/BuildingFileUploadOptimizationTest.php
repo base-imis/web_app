@@ -27,14 +27,14 @@ class BuildingFileUploadOptimizationTest extends TestCase
 
     public function test_shared_upload_script_validates_kml_and_compresses_images(): void
     {
-        $script = file_get_contents(public_path('js/building-file-upload.js'));
+        $buildingScript = file_get_contents(public_path('js/building-file-upload.js'));
+        $imageScript = file_get_contents(public_path('js/emptying-image-upload.js'));
 
-        $this->assertStringContainsString('IMAGE_MAX_DIMENSION = 2560', $script);
-        $this->assertStringContainsString('IMAGE_QUALITY = 0.88', $script);
-        $this->assertStringContainsString("canvas.toBlob(resolve, 'image/jpeg'", $script);
-        $this->assertStringContainsString("getElementsByTagNameNS('*', 'Polygon')", $script);
-        $this->assertStringContainsString('KML_MAX_BYTES = 1 * 1024 * 1024', $script);
-        $this->assertStringContainsString('IMAGE_MAX_BYTES = 5 * 1024 * 1024', $script);
+        $this->assertStringContainsString('MAX_DIMENSION = 1600', $imageScript);
+        $this->assertStringContainsString('JPEG_QUALITY = 0.70', $imageScript);
+        $this->assertStringContainsString("canvas.toBlob(resolve, 'image/jpeg'", $imageScript);
+        $this->assertStringContainsString("getElementsByTagNameNS('*', 'Polygon')", $buildingScript);
+        $this->assertStringContainsString('KML_MAX_BYTES = 1 * 1024 * 1024', $buildingScript);
     }
 
     public function test_house_images_use_short_lived_browser_caching(): void
@@ -46,5 +46,23 @@ class BuildingFileUploadOptimizationTest extends TestCase
             'Cache-Control "public, max-age=3600, must-revalidate"',
             $configuration
         );
+    }
+
+    public function test_php_upload_limit_allows_the_documented_five_megabyte_images(): void
+    {
+        $configuration = file_get_contents(public_path('.user.ini'));
+
+        $this->assertStringContainsString('upload_max_filesize = 6M', $configuration);
+        $this->assertStringContainsString('post_max_size = 12M', $configuration);
+    }
+
+    public function test_emptying_images_are_optimized_before_upload(): void
+    {
+        $script = file_get_contents(public_path('js/emptying-image-upload.js'));
+
+        $this->assertStringContainsString('MAX_DIMENSION = 1600', $script);
+        $this->assertStringContainsString('JPEG_QUALITY = 0.70', $script);
+        $this->assertStringContainsString("canvas.toBlob(resolve, 'image/jpeg'", $script);
+        $this->assertStringContainsString("['house_image', 'receipt_image']", $script);
     }
 }

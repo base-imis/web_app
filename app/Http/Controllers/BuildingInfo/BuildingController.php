@@ -312,16 +312,14 @@ class BuildingController extends Controller
         $statusLIH = LicStatus::getDescription($building->is_lih);
         $status = LicStatus::getDescription($building->is_lic);
         $containment = $building->containments[0] ?? null;
-        $folderPathJpg = public_path('/storage/emptyings/houses/'. $building->bin . '.jpg');
-        $folderPathJpeg = public_path('/storage/emptyings/houses/'. $building->bin . '.jpeg');
-        $imagePathJpg = 'storage/emptyings/houses/' . $building->bin . '.jpg';
-        $imagePathJpeg = 'storage/emptyings/houses/' . $building->bin . '.jpeg';
-        if (file_exists($folderPathJpg) == true) {
-            $imageSrc = asset($imagePathJpg);
-        } elseif (file_exists($folderPathJpeg) == true) {
-            $imageSrc = asset($imagePathJpeg);
-        } else {
-            $imageSrc = false;
+        $imageSrc = false;
+        foreach (['jpg', 'jpeg', 'JPG', 'JPEG'] as $extension) {
+            $relativePath = "storage/emptyings/houses/{$building->bin}.{$extension}";
+            $absolutePath = public_path($relativePath);
+            if (file_exists($absolutePath)) {
+                $imageSrc = asset($relativePath) . '?v=' . filemtime($absolutePath);
+                break;
+            }
         }
         if ($building) {
             return view('building-info.buildings.show', compact('page_title', 'building', 'containment', 'status', 'statusLIH', 'imageSrc', 'ownerPii', 'piiUnlocked'));

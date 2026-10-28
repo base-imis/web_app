@@ -3,9 +3,9 @@
 
     var KML_MAX_BYTES = 1 * 1024 * 1024;
     var IMAGE_MAX_BYTES = 5 * 1024 * 1024;
-    var IMAGE_COMPRESSION_THRESHOLD = 1.5 * 1024 * 1024;
-    var IMAGE_MAX_DIMENSION = 2560;
-    var IMAGE_QUALITY = 0.88;
+    var IMAGE_COMPRESSION_THRESHOLD = 1 * 1024 * 1024;
+    var IMAGE_MAX_DIMENSION = 1600;
+    var IMAGE_QUALITY = 0.70;
     var previewUrl = null;
     var imageProcessing = false;
     var kmlProcessing = false;
@@ -271,10 +271,6 @@
         var imageInput = document.getElementById('house_image');
         var kmlInput = document.getElementById('geom');
         var form = imageInput ? imageInput.form : (kmlInput ? kmlInput.form : null);
-
-        if (imageInput) {
-            imageInput.addEventListener('change', handleImageChange);
-        }
 
         if (kmlInput) {
             kmlInput.addEventListener('change', handleKmlChange);

@@ -111,15 +111,18 @@ class BuildingStructureService
             // storing house image in folder /public/emptyings/houses
             if ($request->hasFile('house_image')) {
                 // Validate the uploaded image
-                $extension_house = $request->house_image->getClientOriginalExtension();
+                $extension_house = strtolower($request->house_image->getClientOriginalExtension());
                 $filename_house = $building->bin . '.' . $extension_house;
 
-                ImageOptimizationHelper::optimizeAndSave(
+                $imageSaved = ImageOptimizationHelper::optimizeAndSave(
                     $request->house_image,
                     Storage::disk('local')->path('/public/emptyings/houses/' . $filename_house),
                     1600,
                     70
                 );
+                if (!$imageSaved) {
+                    throw new \RuntimeException(__('Unable to save the building image.'));
+                }
             }
             //if toilet status is false sanitaiton system id will take request-> defecation_place
             if ($building->toilet_status == false) {
@@ -659,15 +662,18 @@ class BuildingStructureService
              // storing house image in folder /public/emptyings/houses
              if ($request->hasFile('house_image')) {
                 // Validate the uploaded image
-                $extension_house = $request->house_image->getClientOriginalExtension();
+                $extension_house = strtolower($request->house_image->getClientOriginalExtension());
                 $filename_house = $building->bin . '.' . $extension_house;
 
-                ImageOptimizationHelper::optimizeAndSave(
+                $imageSaved = ImageOptimizationHelper::optimizeAndSave(
                     $request->house_image,
                     Storage::disk('local')->path('/public/emptyings/houses/' . $filename_house),
                     1600,
                     70
                 );
+                if (!$imageSaved) {
+                    throw new \RuntimeException(__('Unable to save the building image.'));
+                }
             }
             $building->save();
             // store owner
