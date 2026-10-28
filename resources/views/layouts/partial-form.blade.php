@@ -80,7 +80,7 @@ A dynamic form layout
                                         {!! Form::select($field->inputId,$field->selectValues,$field->selectedValue,['class' => $field->inputClass,'disabled' => $field->disabled]) !!}
                                     @endif
                                     @if($field->inputType === 'date')
-                                        {!! Form::date($field->inputId, $field->inputValue, ['onclick' => 'this.showPicker()', 'class' => $field->inputClass, 'disabled' => $field->disabled, 'autocomplete' => 'off']) !!}
+                                        {!! Form::date($field->inputId, $field->inputValue, ['onclick' => 'this.showPicker()', 'class' => $field->inputClass, 'disabled' => $field->disabled, 'autocomplete' => 'off', 'min' => $field->min]) !!}
                                     @endif
                                 </div>
                             </div>
@@ -148,7 +148,8 @@ A dynamic form layout
                                     'onclick' => 'this.showPicker()',
                                     'class' => $field->inputClass,
                                     'disabled' => $field->disabled,
-                                    'autocomplete' => 'off'
+                                    'autocomplete' => 'off',
+                                    'min' => $field->min
                                 ]) !!}
                                 @endif
                                 @if($field->inputType === 'file_viewer')
@@ -269,7 +270,7 @@ A dynamic form layout
                     {!! Form::datetimeLocal($formField->inputId,$formField->inputValue,['class' => $formField->inputClass]) !!}
                 @endif
                 @if($formField->inputType === 'date')
-                {!! Form::date($formField->inputId, $formField->inputValue, ['onclick' => 'this.showPicker()', 'class' => $formField->inputClass, 'disabled' => $formField->disabled]) !!}
+                {!! Form::date($formField->inputId, $formField->inputValue, ['onclick' => 'this.showPicker()', 'class' => $formField->inputClass, 'disabled' => $formField->disabled, 'min' => $formField->min]) !!}
                 @endif
                     @if($formField->inputType === 'year')
                         <input type="text" id="{{ $formField->inputId }}" name="{{ $formField->inputId }}" value="{{ $formField->inputValue }}" class="{{ $formField->inputClass }}" autocomplete="off" placeholder="{{ $formField->placeholder }}">
