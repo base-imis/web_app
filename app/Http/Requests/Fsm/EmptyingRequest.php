@@ -177,10 +177,12 @@ class EmptyingRequest extends FormRequest
             'total_cost.numeric'               => __('The Total Cost must be numeric.'),
             'house_image.required'             => __('The House Image is required.'),
             'house_image.file'                 => __('The House Image must be a file.'),
+            'house_image.uploaded'             => __('The House Image could not be uploaded. The server accepts images up to 5 MB.'),
             'house_image.mimes'                => __('The House Image must be a file of type: jpeg, jpg.'),
             'house_image.max'                  => __('The House Image should not be greater than 5 MB.'),
             'receipt_image.required'           => __('The Receipt Image is required.'),
             'receipt_image.file'               => __('The Receipt Image must be a file.'),
+            'receipt_image.uploaded'           => __('The Receipt Image could not be uploaded. The server accepts images up to 5 MB.'),
             'receipt_image.mimes'              => __('The Receipt Image must be a file of type: jpeg, jpg.'),
             'receipt_image.max'                => __('The Receipt Image should not be greater than 5 MB.'),
         ];
