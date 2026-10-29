@@ -36,6 +36,7 @@ use DataTables;
 use Throwable;
 use App\Models\Notification;
 use App\Models\User;
+use App\Helpers\ImageOptimizationHelper;
 
 class EmptyingService
 {
@@ -315,7 +316,7 @@ class EmptyingService
 
             if ($application->trip_count == $emptying->trip_no + 1) {
                 $folderPathBuildJpg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpg');
-                $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpgeg');
+                $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpeg');
                 $imagePathBuildJpg = 'storage/emptyings/houses/' . $application->bin . '.jpg';
                 $imagePathBuildJpeg = 'storage/emptyings/houses/' . $application->bin . '.jpeg';
                 if (file_exists($folderPathBuildJpg) == true) {
@@ -602,7 +603,7 @@ class EmptyingService
         $containment = Containment::findOrFail($application->containment_id);
         // houses
         $folderPathBuildJpg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpg');
-        $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpgeg');
+        $folderPathBuildJpeg = public_path('/storage/emptyings/houses/' . $application->bin . '.jpeg');
         $imagePathBuildJpg = 'storage/emptyings/houses/' . $application->bin . '.jpg';
         $imagePathBuildJpeg = 'storage/emptyings/houses/' . $application->bin . '.jpeg';
         if (file_exists($folderPathBuildJpg) == true) {
@@ -1549,8 +1550,8 @@ class EmptyingService
                         ->with('error', 'Error! Receipt and house images are required on final trip.');
                 }
 
-                $extension_receipt = $request->receipt_image->getClientOriginalExtension();
-                $extension_house   = $request->house_image->getClientOriginalExtension();
+                $extension_receipt = strtolower($request->receipt_image->getClientOriginalExtension());
+                $extension_house   = strtolower($request->house_image->getClientOriginalExtension());
 
                 $dateTime = now()->setTimezone(new DateTimeZone('Asia/Kathmandu'))->format('Y_m_d');
 
@@ -1588,13 +1589,27 @@ class EmptyingService
                         "/public/emptyings/houses/{$new_archived_filename}"
                     );
                 }
-                $storeHouseImg = Image::make($request->house_image)
-                    ->save(Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"), 50);
+                $houseImageSaved = ImageOptimizationHelper::optimizeAndSave(
+                    $request->house_image,
+                    Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"),
+                    1600,
+                    70
+                );
+                if (!$houseImageSaved) {
+                    throw new \RuntimeException(__('Unable to save the house image.'));
+                }
                 $emptying->house_image = $filename_house;
                 $filename_receipt = "{$emptying->id}_{$emptying->application_id}_{$emptying->receipt_number}_{$dateTime}.{$extension_receipt}";
 
-                $storeReceiptImg = Image::make($request->receipt_image)
-                    ->save(Storage::disk('local')->path("/public/emptyings/receipts/{$filename_receipt}"), 50);
+                $receiptImageSaved = ImageOptimizationHelper::optimizeAndSave(
+                    $request->receipt_image,
+                    Storage::disk('local')->path("/public/emptyings/receipts/{$filename_receipt}"),
+                    1600,
+                    70
+                );
+                if (!$receiptImageSaved) {
+                    throw new \RuntimeException(__('Unable to save the receipt image.'));
+                }
                 // Assign image paths to emptying
                 $emptying->receipt_image  = $filename_receipt;
                 $emptying->house_image    = $filename_house;
@@ -1765,13 +1780,18 @@ foreach ($recipientIds as $userId) {
                 //check image upload
                 $allowedFileExt = ['jpg', 'jpeg'];
                 if ($request->hasFile('receipt_image')) {
-                    $extension_receipt = $request->receipt_image->getClientOriginalExtension();
+                    $extension_receipt = strtolower($request->receipt_image->getClientOriginalExtension());
                     $check = in_array($extension_receipt, $allowedFileExt);
                     if ($check) {
                         try {
                             $filename_receipt = $emptying->id . '_' . $emptying->application_id . '_' . $emptying->receipt_number . '_' . $dateTime . '.' . $extension_receipt;
-                            $storeReceiptImg = Image::make($request->receipt_image)->save(Storage::disk('local')->path('/public/emptyings/receipts/' . $filename_receipt), 50);
-                            if (!Storage::disk('local')->exists('/public/emptyings/receipts/' . $filename_receipt)) {
+                            $receiptImageSaved = ImageOptimizationHelper::optimizeAndSave(
+                                $request->receipt_image,
+                                Storage::disk('local')->path('/public/emptyings/receipts/' . $filename_receipt),
+                                1600,
+                                70
+                            );
+                            if (!$receiptImageSaved || !Storage::disk('local')->exists('/public/emptyings/receipts/' . $filename_receipt)) {
                                 return redirect()->back()->withInput()->with('error', __("Error! Unable to save receipt image."));
                             }
                             $emptying->receipt_image = $filename_receipt;
@@ -1788,7 +1808,7 @@ foreach ($recipientIds as $userId) {
                 }
 
                 if ($request->hasFile('house_image')) {
-                    $extension_house = $request->house_image->getClientOriginalExtension();
+                    $extension_house = strtolower($request->house_image->getClientOriginalExtension());
                     $check = in_array($extension_house, $allowedFileExt);
                     if ($check) {
                         try {
@@ -1801,8 +1821,15 @@ foreach ($recipientIds as $userId) {
                                     "/public/emptyings/houses/{$new_archived_filename}"
                                 );
                             }
-                            $storeHouseImg = Image::make($request->house_image)
-                                ->save(Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"), 50);
+                            $houseImageSaved = ImageOptimizationHelper::optimizeAndSave(
+                                $request->house_image,
+                                Storage::disk('local')->path("/public/emptyings/houses/{$filename_house}"),
+                                1600,
+                                70
+                            );
+                            if (!$houseImageSaved) {
+                                throw new \RuntimeException(__('Unable to save the house image.'));
+                            }
                             $emptying->house_image = $filename_house;
                         } catch (\Throwable $th) {
                             DB::rollBack();

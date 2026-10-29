@@ -80,7 +80,7 @@ A dynamic form layout
                                         {!! Form::select($field->inputId,$field->selectValues,$field->selectedValue,['class' => $field->inputClass,'disabled' => $field->disabled]) !!}
                                     @endif
                                     @if($field->inputType === 'date')
-                                        {!! Form::date($field->inputId, $field->inputValue, ['onclick' => 'this.showPicker()', 'class' => $field->inputClass, 'disabled' => $field->disabled, 'autocomplete' => 'off']) !!}
+                                        {!! Form::date($field->inputId, $field->inputValue, ['onclick' => 'this.showPicker()', 'class' => $field->inputClass, 'disabled' => $field->disabled, 'autocomplete' => 'off', 'min' => $field->min]) !!}
                                     @endif
                                 </div>
                             </div>
@@ -148,7 +148,8 @@ A dynamic form layout
                                     'onclick' => 'this.showPicker()',
                                     'class' => $field->inputClass,
                                     'disabled' => $field->disabled,
-                                    'autocomplete' => 'off'
+                                    'autocomplete' => 'off',
+                                    'min' => $field->min
                                 ]) !!}
                                 @endif
                                 @if($field->inputType === 'file_viewer')
@@ -269,7 +270,7 @@ A dynamic form layout
                     {!! Form::datetimeLocal($formField->inputId,$formField->inputValue,['class' => $formField->inputClass]) !!}
                 @endif
                 @if($formField->inputType === 'date')
-                {!! Form::date($formField->inputId, $formField->inputValue, ['onclick' => 'this.showPicker()', 'class' => $formField->inputClass, 'disabled' => $formField->disabled]) !!}
+                {!! Form::date($formField->inputId, $formField->inputValue, ['onclick' => 'this.showPicker()', 'class' => $formField->inputClass, 'disabled' => $formField->disabled, 'min' => $formField->min]) !!}
                 @endif
                     @if($formField->inputType === 'year')
                         <input type="text" id="{{ $formField->inputId }}" name="{{ $formField->inputId }}" value="{{ $formField->inputValue }}" class="{{ $formField->inputClass }}" autocomplete="off" placeholder="{{ $formField->placeholder }}">
@@ -307,27 +308,73 @@ A dynamic form layout
                 @endif
                @if($formField->inputType === 'file_upload')
                     @if($formField->inputId === 'house_image' )
-                            <div class="custom-file">
-                                <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept="image/*">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept=".jpg,.jpeg,image/jpeg">
                             <label class="custom-file-label" for="{{ $formField->inputId }}">
                                 {{ $formField->inputValue ? basename($formField->inputValue) : 'Choose file' }}
                             </label>
                         </div>
-                       @if(!empty($formField->inputValue))
-                        <input type="hidden" name="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
+                        @if(!empty($formField->inputValue))
+                            <input type="hidden" name="{{ $formField->inputId }}_existing" id="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
                         @endif
-                        <small class="form-text" id="fileSizeHintImg">(Image (JPG, JPEG) size should not be more than 5MB)</small>
+                        <small class="form-text text-muted" id="fileSizeHintImg">{{ __('Image (JPG, JPEG) size should not be more than 5MB.') }}</small>
+                        <div id="houseImageFeedback" class="file-feedback mt-1" role="status" aria-live="polite"></div>
+                        @php
+                            $houseImageSrc = null;
+                            if (!empty($formField->inputValue)) {
+                                $storedHouseImage = public_path('storage/emptyings/houses/' . basename($formField->inputValue));
+                                if (file_exists($storedHouseImage)) {
+                                    $houseImageSrc = asset('storage/emptyings/houses/' . basename($formField->inputValue)) . '?v=' . filemtime($storedHouseImage);
+                                } elseif (file_exists(public_path($formField->inputValue))) {
+                                    $fallbackHouseImage = public_path($formField->inputValue);
+                                    $houseImageSrc = asset($formField->inputValue) . '?v=' . filemtime($fallbackHouseImage);
+                                }
+                            }
+                        @endphp
+                        <div>
+                            <img
+                                id="houseImagePreview"
+                                class="img-thumbnail mt-2 {{ $houseImageSrc ? '' : 'd-none' }}"
+                                style="max-width: 320px; max-height: 240px; object-fit: contain;"
+                                src="{{ $houseImageSrc ?? '#' }}"
+                                data-default-src="{{ $houseImageSrc ?? '' }}"
+                                alt="{{ __('Selected house image preview') }}"
+                            >
+                        </div>
                     @elseif($formField->inputId === 'receipt_image')
-                          <div class="custom-file">
-                                <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept="image/*">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}" accept=".jpg,.jpeg,image/jpeg">
                             <label class="custom-file-label" for="{{ $formField->inputId }}">
                                 {{ $formField->inputValue ? basename($formField->inputValue) : 'Choose file' }}
                             </label>
                         </div>
-                       @if(!empty($formField->inputValue))
-                        <input type="hidden" name="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
+                        @if(!empty($formField->inputValue))
+                            <input type="hidden" name="{{ $formField->inputId }}_existing" id="{{ $formField->inputId }}_existing" value="{{ $formField->inputValue }}">
                         @endif
-                        <small class="form-text" id="fileSizeRintImg">(Image (JPG, JPEG) size should not be more than 5MB)</small>
+                        <small class="form-text text-muted" id="fileSizeRintImg">{{ __('Image (JPG, JPEG) size should not be more than 5MB.') }}</small>
+                        <div id="receiptImageFeedback" class="file-feedback mt-1" role="status" aria-live="polite"></div>
+                        @php
+                            $receiptImageSrc = null;
+                            if (!empty($formField->inputValue)) {
+                                $storedReceiptImage = public_path('storage/emptyings/receipts/' . basename($formField->inputValue));
+                                if (file_exists($storedReceiptImage)) {
+                                    $receiptImageSrc = asset('storage/emptyings/receipts/' . basename($formField->inputValue)) . '?v=' . filemtime($storedReceiptImage);
+                                } elseif (file_exists(public_path($formField->inputValue))) {
+                                    $fallbackReceiptImage = public_path($formField->inputValue);
+                                    $receiptImageSrc = asset($formField->inputValue) . '?v=' . filemtime($fallbackReceiptImage);
+                                }
+                            }
+                        @endphp
+                        <div>
+                            <img
+                                id="receiptImagePreview"
+                                class="img-thumbnail mt-2 {{ $receiptImageSrc ? '' : 'd-none' }}"
+                                style="max-width: 320px; max-height: 240px; object-fit: contain;"
+                                src="{{ $receiptImageSrc ?? '#' }}"
+                                data-default-src="{{ $receiptImageSrc ?? '' }}"
+                                alt="{{ __('Selected receipt image preview') }}"
+                            >
+                        </div>
                     @else
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" name="{{ $formField->inputId }}" id="{{ $formField->inputId }}">
