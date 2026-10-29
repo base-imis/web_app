@@ -1,24 +1,25 @@
-/*
-    Function for delete action
-*/
-function deleteAction(form) {
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            if (window.globalLoader && window.globalLoader.isManagedPath()) {
-                window.globalLoader.show(Swal.getConfirmButton());
+/* Shared delete confirmation is provided by delete-action.js when available. */
+if (typeof window.deleteAction !== 'function') {
+    window.deleteAction = function(form) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (window.globalLoader && window.globalLoader.isManagedPath()) {
+                    window.globalLoader.show(Swal.getConfirmButton());
+                }
+                form.submit();
             }
-            form.submit();
-        }
-    });
+        });
+    };
 }
+window.confirmDelete = window.deleteAction;
 /*
     Function for filtering DataTable
 */
