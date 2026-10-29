@@ -50,6 +50,17 @@
           background: #fff !important;
           border: 1px solid #ced4da !important;
       }
+      .select2-container--default .select2-selection--single {
+          height: 38px !important;
+          border: 1px solid #ced4da !important;
+          padding: 4px 8px !important;
+      }
+      .select2-container--default .select2-selection--single .select2-selection__rendered {
+          line-height: 28px !important;
+      }
+      .select2-container--default .select2-selection--single .select2-selection__arrow {
+          height: 36px !important;
+      }
     </style>
 <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" rel="stylesheet">
@@ -77,13 +88,21 @@
     <div class="form-group row">
         {!! Form::label('type', __('Type'), ['class' => 'col-sm-3 control-label']) !!}
         <div class="col-sm-3">
-            <select name="type" id="type" class="form-control chosen-select" required>
-                <option value="">{{ __('Select Type') }}</option>
+            <select name="type" id="type" class="form-control select2">
+                <option value="">{{ __('Select or Enter Type') }}</option>
+                @php
+                    $selectedType = old('type', $place->type ?? '');
+                @endphp
+                @if(!empty($selectedType) && !in_array($selectedType, $types))
+                    <option value="{{ $selectedType }}" selected>{{ $selectedType }}</option>
+                @endif
                 @foreach($types as $type)
-                    <option value="{{ $type }}"
-                        {{ (old('type', $place->type ?? '') == $type) ? 'selected' : '' }}>
-                        {{ $type }}
-                    </option>
+                    @if(!empty($type))
+                        <option value="{{ $type }}"
+                            {{ ($selectedType == $type) ? 'selected' : '' }}>
+                            {{ $type }}
+                        </option>
+                    @endif
                 @endforeach
             </select>
         </div>
@@ -134,20 +153,21 @@
     
     <script>
         window.mapConfig = window.mapConfig || {
-            centerLng: 81.6333,
-            centerLat: 28.6000,
+            centerLng: 85.37004580498977,
+            centerLat: 27.643296216592432,
             minZoom: 12,
             maxZoom: 18
         };
 
         var workspace = '<?php echo Config::get("constants.GEOSERVER_WORKSPACE"); ?>';
-        // URL of GeoServer
-        var gurl = "<?php echo Config::get("constants.GEOSERVER_URL"); ?>/";
-        var gurl_wms = gurl + 'wms';
-        var gurl_wfs = gurl + 'wfs';
-        var authkey = '<?php echo Config::get("constants.AUTH_KEY"); ?>';
+        var gurl_wms = "{{ route('gis.wms') }}";
+        var gurl_wfs = "{{ route('gis.wfs') }}";
         // URL of GeoServer Legends
-        var gurl_legend = gurl_wms + "?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&BBOX=89.1281,23.502, 89.2068,23.5892&LAYER=";
+        var gurl_legend =
+                gurl_wms +
+                "?SERVICE=WMS&REQUEST=GetLegendGraphic&VERSION=1.0.0" +
+                "&FORMAT=image/png&WIDTH=20&HEIGHT=20" +
+                "&BBOX=89.1281,23.502,89.2068,23.5892&LAYER=";
 
         var WARD_NUMBERS = <?php echo json_encode(array_values($wards)); ?>;
 
@@ -277,7 +297,7 @@
                 })
             ],
             view: typeof createMapView !== 'undefined' ? createMapView() : new ol.View({
-                center: ol.proj.transform([81.6333, 28.6000], 'EPSG:4326', 'EPSG:3857'),
+                center: ol.proj.transform([85.37004580498977,27.643296216592432], 'EPSG:4326', 'EPSG:3857'),
                 zoom: 13,
                 minZoom: 12,
                 maxZoom: 18
@@ -344,7 +364,7 @@
                 return;
             }
 
-            var wfsBase = gurl_wfs.replace(/([^:])\/{2,}/g, '$1/');
+            var wfsBase = gurl_wfs;
             var wfsUrl = wfsBase
                 + '?service=WFS'
                 + '&version=2.0.0'
@@ -593,7 +613,7 @@
                 ));
                 map.getView().setZoom(window.mapConfig.minZoom || 13);
             } else {
-                map.getView().setCenter(ol.proj.transform([81.6333, 28.6000], 'EPSG:4326', 'EPSG:3857'));
+                map.getView().setCenter(ol.proj.transform([85.37004580498977, 27.643296216592432], 'EPSG:4326', 'EPSG:3857'));
                 map.getView().setZoom(13);
             }
         }
@@ -601,12 +621,20 @@
         setInitialZoom();
         
         $(document).ready(function(){
-            // INITIALIZE CHOSEN SEARCHABLE DROPDOWN
-            $(".chosen-select").chosen({
-                no_results_text: "No results found!",
-                width: "100%",
-                search_contains: true
+            $('#type').select2({
+                tags: true,
+                placeholder: "{{ __('Select or Enter Type') }}",
+                allowClear: true,
+                width: '100%'
             });
+
+            if ($(".chosen-select").length) {
+                $(".chosen-select").chosen({
+                    no_results_text: "No results found!",
+                    width: "100%",
+                    search_contains: true
+                });
+            }
 
             if($('.date').length) {
                 $('.date').datetimepicker({
@@ -619,6 +647,10 @@
                     format: 'hh:mm A'
                 });
             }
+
+            // Prevent browser from trying to navigate to file:/// if a file is dragged onto the page/map
+            window.addEventListener('dragover', function(e) { e.preventDefault(); }, false);
+            window.addEventListener('drop', function(e) { e.preventDefault(); }, false);
 
             var initialWard = $('#ward').val();
             if (initialWard) {
