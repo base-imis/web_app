@@ -276,7 +276,16 @@ class SludgeCollectionController extends Controller
             // -------------------------
             $application = Application::where('id', $appId)->first();
             if ($application) {
-                $application->sludge_collection_status = true;
+                $completedTrips = max(0, (int) $sludgeCollection->trip_no);
+                $requiredTrips = max(1, (int) $application->trip_count);
+
+                if ($completedTrips === 0) {
+                    $application->sludge_collection_status = 0;
+                } elseif ($completedTrips >= $requiredTrips) {
+                    $application->sludge_collection_status = 2;
+                } else {
+                    $application->sludge_collection_status = 1;
+                }
                 $application->save();
             }
 
@@ -615,10 +624,6 @@ foreach ($recipientIds as $userId) {
 
             if ($sludgeCollection && $emptying && $sludgeCollection->trip_no == $emptying->trip_no) {
 
-                $application = Application::findOrFail($sludgeCollectionLog->application_id);
-                $application->sludge_collection_status = 1;
-                $application->save();
-
                 $sludgeCollection->trip_no -= 1;
                 $sludgeCollection->tipping_fee_amount -= $sludgeCollectionLog->tipping_fee_amount;
 
@@ -627,6 +632,19 @@ foreach ($recipientIds as $userId) {
                 }
 
                 $sludgeCollection->save();
+
+                $application = Application::findOrFail($sludgeCollectionLog->application_id);
+                $completedTrips = max(0, (int) $sludgeCollection->trip_no);
+                $requiredTrips = max(1, (int) $application->trip_count);
+
+                if ($completedTrips === 0) {
+                    $application->sludge_collection_status = 0;
+                } elseif ($completedTrips >= $requiredTrips) {
+                    $application->sludge_collection_status = 2;
+                } else {
+                    $application->sludge_collection_status = 1;
+                }
+                $application->save();
 
                 $sludgeCollectionLog->delete();
 
