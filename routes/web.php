@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Fsm\ApplicationController;
 use App\Http\Controllers\Api\ApiServiceController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MapsController;
 use App\Http\Controllers\Proxy\WMSProxyController;
 use App\Http\Controllers\PlacesController;
@@ -47,7 +48,12 @@ Route::middleware('fixed_token_auth')->get('redirect-to-map/{ebps_id}', [ApiServ
 Route::get('/files', 'FileController@index')->name('files.index');
 Route::post('/files/upload', 'FileController@upload')->name('files.upload');
 
-
+Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'fetch']); // fetch notifications
+    Route::post('/notification/read', [NotificationController::class, 'markAsRead']); // single read
+    Route::post('/notification/read-all', [NotificationController::class, 'markAllAsRead']); // mark all as read
+    Route::post('/notification/clear-all', [NotificationController::class, 'clearAll']); // clear all
+}); 
 
 
 Route::post('/contact/send', [ContactController::class, 'send'])
