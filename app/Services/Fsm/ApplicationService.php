@@ -1043,7 +1043,7 @@ class ApplicationService
             'applications.emptying_status',
             'applications.sludge_collection_status',
             'applications.feedback_status',
-
+            'applications.trip_count',
             'applications.ward',
             'applications.service_provider_id',
             'building_info.buildings.house_number AS house_address',
