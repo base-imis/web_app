@@ -37,7 +37,6 @@ class NotificationController extends Controller
 
         $notification->update([
             'status' => true,
-            'read_at' => now(),
         ]);
 
         return response()->json(['message' => 'Notification marked as seen']);
@@ -47,7 +46,7 @@ class NotificationController extends Controller
     public function markAllAsRead()
     {
         Notification::where('user_id', auth()->id())
-            ->update(['status' => true, 'read_at' => now()]); // Mark as read and update read_at
+            ->update(['status' => true]);
         return response()->json(['success' => true]);
     }
 
