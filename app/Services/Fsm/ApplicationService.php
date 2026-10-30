@@ -504,7 +504,8 @@ class ApplicationService
                             inputType: 'date',
                             inputId: 'proposed_emptying_date',
                             required: true,
-                            placeholder: __('Proposed Emptying Date')
+                            placeholder: __('Proposed Emptying Date'),
+                            min: now()->toDateString()
                         ),
                         new FormField(
                             label: __('Service Provider Name'),
