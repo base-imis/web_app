@@ -63,10 +63,10 @@ class BuildingsListKmlExport implements
     $ownersSub = DB::table('building_info.owners')
         ->select([
             'bin',
-            DB::raw('MAX(owner_name)   AS owner_name'),
-            DB::raw('MAX(owner_gender) AS owner_gender'),
-            DB::raw('MAX(owner_contact) AS owner_contact'),
-            DB::raw('MAX(nid)          AS nid'),
+            DB::raw("MAX(CASE WHEN owner_name IS NULL OR owner_name = '' THEN NULL ELSE '********' END) AS owner_name"),
+            DB::raw("MAX(CASE WHEN owner_gender IS NULL OR owner_gender = '' THEN NULL ELSE '********' END) AS owner_gender"),
+            DB::raw("MAX(CASE WHEN owner_contact IS NULL OR owner_contact = '' THEN NULL ELSE '********' END) AS owner_contact"),
+            DB::raw("MAX(CASE WHEN nid IS NULL OR nid = '' THEN NULL ELSE '********' END) AS nid"),
         ])
         ->groupBy('bin');
 
@@ -264,10 +264,10 @@ class BuildingsListKmlExport implements
             $row->diff_abled_female_pop,
             $row->diff_abled_others_pop,
             $row->verification_status,
-            $row->owner_name,
-            $row->owner_gender,
-            $row->owner_contact,
-            $row->nid,
+            ($row->owner_name === null || $row->owner_name === '') ? $row->owner_name : '********',
+            ($row->owner_gender === null || $row->owner_gender === '') ? $row->owner_gender : '********',
+            ($row->owner_contact === null || $row->owner_contact === '') ? $row->owner_contact : '********',
+            ($row->nid === null || $row->nid === '') ? $row->nid : '********',
             $row->community_name,
             $row->low_income_hh,
             $row->watersupply_pipe_code,
