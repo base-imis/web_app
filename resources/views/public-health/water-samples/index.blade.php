@@ -186,15 +186,22 @@ $('#filter-form').on('submit', function(e) {
         var sample_date = $('#sample_date').val();
         var sample_location = $('#sample_location').val();
         var water_coliform_test_result = $('#water_coliform_test_result').val();
-        window.location.href = "{!! url('publichealth/water-samples/export?searchData=') !!}" + searchData +
-            "&sample_date=" + sample_date + "&sample_location=" + sample_location + "&water_coliform_test_result=" + water_coliform_test_result;
+        window.globalLoader.download(
+            "{!! url('publichealth/water-samples/export?searchData=') !!}" + searchData +
+                "&sample_date=" + sample_date + "&sample_location=" + sample_location + "&water_coliform_test_result=" + water_coliform_test_result,
+            'water-samples.csv',
+            this
+        ).catch(function () {});
     })
 
     $("#export-shp").on("click", function(e) {
         e.preventDefault();
         var cql_param = getCQLParams();
-        window.location.href =  "{{ Config::get('constants.GEOSERVER_URL') }}wfs?service=WFS&version=1.0.0&request=GetFeature&authkey={{ Config::get('constants.AUTH_KEY') }}&typeName={{ Config::get('constants.GEOSERVER_WORKSPACE') }}:water_samples_layer+&CQL_FILTER=" + cql_param +
-            " &outputFormat=SHAPE-ZIP&format_options=filename:Water Samples.zip";
+        window.globalLoader.download(
+            "{{ route('gis.export', ['format' => 'shp']) }}?layer=water_samples_layer&filter=" + encodeURIComponent(cql_param),
+            'Water Samples.zip',
+            this
+        ).catch(function () {});
 
     })
 
@@ -202,8 +209,11 @@ $('#filter-form').on('submit', function(e) {
         e.preventDefault();
         var cql_param = getCQLParams();
 
-        window.location.href =  "{{ Config::get('constants.GEOSERVER_URL') }}wfs?service=WFS&version=1.0.0&request=GetFeature&authkey={{ Config::get('constants.AUTH_KEY') }}&typeName={{ Config::get('constants.GEOSERVER_WORKSPACE') }}:water_samples_layer+&CQL_FILTER=" + cql_param +
-            " &outputFormat=KML&format_options=filename:Water Samples.kml";
+        window.globalLoader.download(
+            "{{ route('gis.export', ['format' => 'kml']) }}?layer=water_samples_layer&filter=" + encodeURIComponent(cql_param),
+            'Water Samples.kml',
+            this
+        ).catch(function () {});
     });
 
     function getCQLParams() {

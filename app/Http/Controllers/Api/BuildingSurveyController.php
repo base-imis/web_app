@@ -13,6 +13,7 @@ use App\Models\SewerConnection\SewerConnection;
 use App\Models\BuildingInfo\BuildingSurvey;
 use App\Models\BuildingInfo\WmsLink;
 use App\Models\Fsm\ContainmentSurvey;
+use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 use DOMDocument;
@@ -67,6 +68,138 @@ class BuildingSurveyController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+     public function locateBuildingByPoint(Request $request): JsonResponse
+    {
+
+
+        $validator = Validator::make($request->all(), [
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $lat = $request->lat;
+            $lng = $request->lng;
+
+            $workspace = config('services.geoserver.workspace');
+           $geoserverUrl = rtrim(
+                    config('services.geoserver.url'),
+                    '/'
+                );
+
+            $response = Http::timeout(20)->get($geoserverUrl . '/wfs', [
+                'service'      => 'WFS',
+                'version'      => '1.0.0',
+                'request'      => 'GetFeature',
+                'typeName'     => $workspace . ':buildings_layer',
+                'outputFormat' => 'application/json',
+                'CQL_FILTER'   => "INTERSECTS(geom,POINT($lng $lat))",
+                // Server-side only; never send this from mobile/browser.
+                'authkey' => config('services.geoserver.auth_key'),
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to query GeoServer.',
+                    'response_body' => $response->body(),
+                ], 500);
+            }
+
+            $geojson = $response->json();
+
+            if (
+                !isset($geojson['features']) ||
+                !is_array($geojson['features']) ||
+                count($geojson['features']) === 0
+            ) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No building found at this location.',
+                    'data' => [
+                        'found' => false,
+                        'lat' => (float) $lat,
+                        'lng' => (float) $lng,
+                        'building' => null,
+                        'containments' => [],
+                    ],
+                ]);
+            }
+
+            $feature = $geojson['features'][0];
+            $props = $feature['properties'] ?? [];
+
+            $bin = $props['bin'] ?? null;
+
+            if (!$bin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Building found but BIN is missing.',
+                    'data' => [
+                        'found' => true,
+                        'lat' => (float) $lat,
+                        'lng' => (float) $lng,
+                        'building' => $props,
+                        'containments' => [],
+                    ],
+                ], 500);
+            }
+
+            return $this->buildBuildingInfoResponse($bin, $props, $lat, $lng);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function buildBuildingInfoResponse(string $bin, array $props, $lat, $lng): JsonResponse
+    {
+        $building = Building::with(['Owners', 'StructureType', 'containments.containmentType'])
+            ->where('bin', $bin)->first();
+
+        if (!$building) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Building is in GeoServer but not in the database.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Building found at this location.',
+            'data' => [
+                'found' => true,
+                'lat' => (float) $lat,
+                'lng' => (float) $lng,
+                'building' => [
+                    'bin' => $building->bin,
+                    'owner_name' => $building->Owners->owner_name ?? null,
+                    'ward' => $building->ward,
+                    'house_number' => $building->house_number,
+                    'road_code' => $building->road_code,
+                    'floor_count' => $building->floor_count,
+                    'structure_type' => optional($building->StructureType)->type,
+                ],
+                'containments' => $building->containments->map(fn ($c) => [
+                    'id' => $c->id,                                  // e.g. "C009026"
+                    'type' => optional($c->containmentType)->type,
+                    'size' => $c->size,
+                    'construction_date' => $c->construction_date,
+                ])->values(),
+            ],
+        ]);
     }
 
     public function getSewerCodes()
@@ -212,8 +345,11 @@ class BuildingSurveyController extends Controller
             $wms = WmsLink::all()->where('name', '=', $layer)->pluck('link', 'name');
             return response()->json([
                 'success' => true,
-                'baseUrl' => config("constants.GEOSERVER_URL"),
+                'baseUrl' => route('gis.wms'),
                 'data' => $wms,
+                'bbox'    => config('constants.GEOSERVER_BBOX'),
+                'width'   => config('constants.GEOSERVER_WIDTH'),
+                'height'  => config('constants.GEOSERVER_HEIGHT'),
                 'message' => __('WMS layer for:').$layer,
             ]);
 
