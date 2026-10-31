@@ -2041,6 +2041,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                     var wkt = wktFormat.writeGeometry(feature.getGeometry().clone().transform('EPSG:3857', 'EPSG:4326'));
                     var name = feature.get('name') || 'Unnamed Feature';
                     feature.set('name', name);
+                    feature.set('kmlViewerWkt', wkt);
                     return { name: name, wkt: wkt };
                 });
 
@@ -2081,7 +2082,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                         }
 
                         features.forEach(function (feature) {
-                            var detail = intersecting.find(function (item) { return item.name === feature.get('name'); });
+                            var detail = intersecting.find(function (item) { return item.wkt === feature.get('kmlViewerWkt'); });
                             if (!detail) return;
                             var geometry = feature.getGeometry();
                             var isPoint = geometry.getType() === 'Point';
