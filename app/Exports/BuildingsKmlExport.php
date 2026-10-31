@@ -124,7 +124,7 @@ class BuildingsKmlExport implements FromView, WithTitle, WithEvents
             }
 
             $rows[] = [
-                'Structure Type'      => 'Total',
+                'StructureType'      => 'Total',
                 'Buildings'          => $total,
                 'Sewer Network'      => $total_sewer_network,
                 'Drain Network'      => $total_drain_network,
