@@ -10,6 +10,8 @@ use App\Http\Controllers\Fsm\ApplicationController;
 use App\Http\Controllers\Api\ApiServiceController;
 use App\Http\Controllers\MapsController;
 use App\Http\Controllers\Proxy\WMSProxyController;
+use App\Http\Controllers\PlacesController;
+use App\Models\Places;
 
 /*
 |--------------------------------------------------------------------------
@@ -448,13 +450,22 @@ Route::group([
      * Application Routes
      *
      */
-    Route::get('application/getData', 'ApplicationController@getData')->name('application.get-data');
+        Route::get('application/getData', 'ApplicationController@getData')->name('application.get-data');
     Route::get('application/export', 'ApplicationController@export')->name('application.export');
     Route::get('application/{id}/history', 'ApplicationController@history')->name('application.history');
     Route::get('application/getBuildingDetails', 'ApplicationController@buildingDetails')->name('application.get-building-details');
+    Route::get('application/vehicles-by-provider', [ApplicationController::class, 'getVehiclesByServiceProvider'])->name('application.vehicles-by-provider');
     Route::get('application/pdf/{year}/{month}/monthly-report', 'ApplicationController@monthlyApplicationsPdf');
     Route::get('application/{id}/application-report', 'ApplicationController@applicationReport')->name('application.report');
+    Route::get('emptying-scheduling/{id}', 'ApplicationController@editScheduling')->name('emptying-scheduling');
+    Route::patch('emptying-scheduling/{id}/store', 'ApplicationController@schedulingform')->name('emptying-scheduling.store');
+    Route::post('/sequence/by-capacity', [ApplicationController::class, 'byCapacity'])->name('sequence.byCapacity');
+    Route::get('/capacity-by-date/{application}', [ApplicationController::class, 'checkCapacityByDate'])->name('applications.capacity-by-date');
+    Route::get('/application/{id}/force-delete', [ApplicationController::class, 'forceDelete'])
+        ->name('application.forceDelete');
+    Route::patch('applications/{id}/resolve-anf', [ApplicationController::class, 'resolveAnf'])->name('application.resolve-anf');  
     Route::get('/service-provider/{service_provider_id}', 'ApplicationController@getServiceProvider');
+    Route::get('/treatment-plant', [ApplicationController::class, 'getTreatmentPlant'])->name('application.treatment-plant');
     Route::resource('application', 'ApplicationController');
 
     /**
@@ -482,9 +493,12 @@ Route::group([
      *
      */
     Route::get('sludge-collection/create/{id}', 'SludgeCollectionController@create')->name('sludge-collection.create-id');
+    Route::get('sludge-collection/create-log/{id}', 'SludgeCollectionController@createLog')->name('sludge-collection.create-log-id');
     Route::get('sludge-collection/getData', 'SludgeCollectionController@getData')->name('sludge-collection.get-data');
+    Route::get('sludge-collection-log/getData', 'SludgeCollectionController@getData')->name('sludge-collection.get-data-log');
     Route::get('sludge-collection/export', 'SludgeCollectionController@export');
     Route::get('sludge-collection/{id}/history', 'SludgeCollectionController@history');
+    Route::get('sludge-collection/{id}/show-details', 'SludgeCollectionController@showDetails')->name('sludge-collection.show-details');
 
 
     Route::resource('sludge-collection', 'SludgeCollectionController');
@@ -507,6 +521,53 @@ Route::group([
     /**
      * CWIS Routes
      */
+    Route::get('rpm-data/create', 'CwisRpmDataController@create')->name('cwis.rpm.create');
+    Route::post('rpm-data', 'CwisRpmDataController@store')->name('cwis.rpm.store');
+    Route::get('rpm-data/{submission}/edit', 'CwisRpmDataController@edit')->whereNumber('submission')->name('cwis.rpm.edit');
+    Route::get('rpm-data/{submission}', 'CwisRpmDataController@show')->whereNumber('submission')->name('cwis.rpm.show');
+    Route::get('rpm-data/{submission}/review', 'CwisRpmDataController@review')->whereNumber('submission')->name('cwis.rpm.review');
+    Route::post('rpm-data/{submission}/approve', 'CwisRpmDataController@approve')->whereNumber('submission')->name('cwis.rpm.approve');
+    Route::post('rpm-data/{submission}/calculate', 'CwisRpmDataController@calculate')->whereNumber('submission')->name('cwis.rpm.calculate');
+    Route::put('rpm-data/{submission}', 'CwisRpmDataController@update')->whereNumber('submission')->name('cwis.rpm.update');
+    Route::get('rpm-data/{submission}/documents/{document}', 'CwisRpmDataController@document')->whereNumber('submission')->whereNumber('document')->name('cwis.rpm.document');
+    Route::get('accountability-data/create', 'CwisAccountabilityDataController@create')->name('cwis.accountability.create');
+    Route::post('accountability-data', 'CwisAccountabilityDataController@store')->name('cwis.accountability.store');
+    Route::get('accountability-data/{submission}/edit', 'CwisAccountabilityDataController@edit')->whereNumber('submission')->name('cwis.accountability.edit');
+    Route::get('accountability-data/{submission}', 'CwisAccountabilityDataController@show')->whereNumber('submission')->name('cwis.accountability.show');
+    Route::get('accountability-data/{submission}/review', 'CwisAccountabilityDataController@review')->whereNumber('submission')->name('cwis.accountability.review');
+    Route::post('accountability-data/{submission}/approve', 'CwisAccountabilityDataController@approve')->whereNumber('submission')->name('cwis.accountability.approve');
+    Route::post('accountability-data/{submission}/calculate', 'CwisAccountabilityDataController@calculate')->whereNumber('submission')->name('cwis.accountability.calculate');
+    Route::put('accountability-data/{submission}', 'CwisAccountabilityDataController@update')->whereNumber('submission')->name('cwis.accountability.update');
+    Route::get('accountability-data/{submission}/documents/{document}', 'CwisAccountabilityDataController@document')->whereNumber('submission')->whereNumber('document')->name('cwis.accountability.document');
+    Route::get('responsibility-data/create', 'CwisResponsibilityDataController@create')->name('cwis.responsibility.create');
+    Route::post('responsibility-data', 'CwisResponsibilityDataController@store')->name('cwis.responsibility.store');
+    Route::get('responsibility-data/{submission}/edit', 'CwisResponsibilityDataController@edit')->whereNumber('submission')->name('cwis.responsibility.edit');
+    Route::get('responsibility-data/{submission}', 'CwisResponsibilityDataController@show')->whereNumber('submission')->name('cwis.responsibility.show');
+    Route::get('responsibility-data/{submission}/review', 'CwisResponsibilityDataController@review')->whereNumber('submission')->name('cwis.responsibility.review');
+    Route::post('responsibility-data/{submission}/approve', 'CwisResponsibilityDataController@approve')->whereNumber('submission')->name('cwis.responsibility.approve');
+    Route::post('responsibility-data/{submission}/calculate', 'CwisResponsibilityDataController@calculate')->whereNumber('submission')->name('cwis.responsibility.calculate');
+    Route::put('responsibility-data/{submission}', 'CwisResponsibilityDataController@update')->whereNumber('submission')->name('cwis.responsibility.update');
+    Route::get('responsibility-data/{submission}/documents/{document}', 'CwisResponsibilityDataController@document')->whereNumber('submission')->whereNumber('document')->name('cwis.responsibility.document');
+    Route::get('sustainability-data/create', 'CwisSustainabilityDataController@create')->name('cwis.sustainability.create');
+    Route::post('sustainability-data', 'CwisSustainabilityDataController@store')->name('cwis.sustainability.store');
+    Route::get('sustainability-data/{submission}/edit', 'CwisSustainabilityDataController@edit')->whereNumber('submission')->name('cwis.sustainability.edit');
+    Route::get('sustainability-data/{submission}', 'CwisSustainabilityDataController@show')->whereNumber('submission')->name('cwis.sustainability.show');
+    Route::get('sustainability-data/{submission}/review', 'CwisSustainabilityDataController@review')->whereNumber('submission')->name('cwis.sustainability.review');
+    Route::post('sustainability-data/{submission}/approve', 'CwisSustainabilityDataController@approve')->whereNumber('submission')->name('cwis.sustainability.approve');
+    Route::post('sustainability-data/{submission}/calculate', 'CwisSustainabilityDataController@calculate')->whereNumber('submission')->name('cwis.sustainability.calculate');
+    Route::put('sustainability-data/{submission}', 'CwisSustainabilityDataController@update')->whereNumber('submission')->name('cwis.sustainability.update');
+    Route::get('sustainability-data/{submission}/documents/{document}', 'CwisSustainabilityDataController@document')->whereNumber('submission')->whereNumber('document')->name('cwis.sustainability.document');
+    Route::get('generator-data', 'CwisGeneratorDataController@index')->name('cwis.generator-data.index');
+    Route::get('generator-data/create', 'CwisGeneratorDataController@create')->name('cwis.generator-data.create');
+    Route::post('generator-data', 'CwisGeneratorDataController@store')->name('cwis.generator-data.store');
+    Route::get('generator-data/data', 'CwisGeneratorDataController@getData')->name('cwis.generator-data.data');
+    Route::get('generator-data/{submission}/documents/{document}', 'CwisGeneratorDataController@document')->whereNumber('submission')->whereNumber('document')->name('cwis.generator-data.document');
+    Route::get('generator-data/{submission}', 'CwisGeneratorDataController@show')->whereNumber('submission')->name('cwis.generator-data.show');
+    Route::get('generator-data/{submission}/edit', 'CwisGeneratorDataController@edit')->whereNumber('submission')->name('cwis.generator-data.edit');
+    Route::get('generator-data/{submission}/review', 'CwisGeneratorDataController@review')->whereNumber('submission')->name('cwis.generator-data.review');
+    Route::put('generator-data/{submission}', 'CwisGeneratorDataController@update')->whereNumber('submission')->name('cwis.generator-data.update');
+    Route::post('generator-data/{submission}/approve', 'CwisGeneratorDataController@approve')->whereNumber('submission')->name('cwis.generator-data.approve');
+    Route::post('generator-data/{submission}/calculate', 'CwisGeneratorDataController@calculate')->whereNumber('submission')->name('cwis.generator-data.calculate');
     Route::get('cwis-df-mne/newsurvey', 'CwisMneController@createIndex');
     Route::post('cwis-df-mne/newsurvey', 'CwisMneController@createStore');
     Route::get('cwis-df-mne/export-mne-csv', 'CwisMneController@exportMneCsv');
@@ -580,6 +641,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('maps/check-location-within-boundary','MapsController@checkLocationWithinBoundary');
     Route::get('maps/toilet-isochrone', 'MapsController@getToiletIsochroneAreaLayers');
    Route::get('/proxy-wms', 'MapsController@proxyWms')->middleware('throttle:20,1');
+
+    Route::get('places/data', 'PlacesController@getData')->name('places.getData');
+    Route::get('places/export', 'PlacesController@export')->name('places.export');
+    Route::resource('places', 'PlacesController');
 
 });
 
