@@ -1,6 +1,6 @@
 <?php
 // Last Modified Date: 18-04-2024
-// Developed By: Innovative Solution Pvt. Ltd. (ISPL)  
+// Developed By: Innovative Solution Pvt. Ltd. (ISPL)
 namespace App\Http\Controllers\Fsm;
 
 use App\Http\Controllers\Controller;
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Venturecraft\Revisionable\Revision;
 use Yajra\DataTables\Facades\DataTables;
-use  App\Models\Fsm\TreatmentPlant;
+use App\Models\Fsm\TreatmentPlant;
 use App\Models\LayerInfo\Ward;
 use Carbon\Carbon;
 use DB;
@@ -378,8 +378,10 @@ class ApplicationController extends Controller
 
         // Browser-disabled fields are not a security boundary. A crafted
         // request that changes customer PII must also hold the edit grant.
-        if ($containsCustomerPii
-            && !$this->customerPiiIsUnlocked($application, 'edit')) {
+        if (
+            $containsCustomerPii
+            && !$this->customerPiiIsUnlocked($application, 'edit')
+        ) {
             $this->piiAudit->record(
                 'application_customer_pii_update_denied',
                 false,
@@ -472,7 +474,7 @@ class ApplicationController extends Controller
     {
         OperationalDataAccessService::authorizeApplication(Application::findOrFail($id));
         $request->validate([
-            'bin'            => 'required|string',
+            'bin' => 'required|string',
             'containment_id' => 'required|string', // 👈 required
         ]);
 
@@ -480,14 +482,14 @@ class ApplicationController extends Controller
 
         if (!$application) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => __('Application not found.')
             ], 404);
         }
 
         if (!$application->is_anf) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => __('This application is not an Address Not Found (ANF) application or has already been resolved.')
             ], 422);
         }
@@ -496,7 +498,7 @@ class ApplicationController extends Controller
         if ($user && $user->hasRole('Service Provider - Emptying Operator')) {
             if ($user->service_provider_id && $application->service_provider_id != $user->service_provider_id) {
                 return response()->json([
-                    'status'  => false,
+                    'status' => false,
                     'message' => __('Unauthorized. You do not have permission to resolve applications for other service providers.')
                 ], 403);
             }
@@ -512,7 +514,7 @@ class ApplicationController extends Controller
             return response()->json(['status' => true]);
         } catch (\Exception $e) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => $e->getMessage()
             ], 422);
         }
@@ -605,7 +607,7 @@ class ApplicationController extends Controller
 
         // Send Push Notification
         $message = "Application (ID: {$application->id}) has been scheduled for " . \Carbon\Carbon::parse($request->proposed_emptying_date)->format('M d, Y') . ".";
-        
+
         $etoUserIds = \DB::table('fsm.employees')
             ->where('service_provider_id', $application->service_provider_id)
             ->where('status', true)
@@ -635,9 +637,9 @@ class ApplicationController extends Controller
         $capacity = $data['capacity'];
 
         return response()->json([
-            'next_id'   => $svc->getNextServiceProviderId($capacity),
+            'next_id' => $svc->getNextServiceProviderId($capacity),
             'next_name' => $svc->getNextServiceProviderName($capacity),
-            'sequence'  => $capacity,
+            'sequence' => $capacity,
         ]);
     }
 
@@ -655,22 +657,22 @@ class ApplicationController extends Controller
 
         $totalBookedForDay = (float) Application::whereDate('proposed_emptying_date', $date)->sum(DB::raw('COALESCE(desludging_vehicle_size, 0)'));
 
-        $available      = max($totalCapacity - $totalBookedForDay, 0.0);
-        $totalIfAdded   = $totalBookedForDay + $vehicleSize;
+        $available = max($totalCapacity - $totalBookedForDay, 0.0);
+        $totalIfAdded = $totalBookedForDay + $vehicleSize;
         $remainingAfter = max($totalCapacity - $totalIfAdded, 0.0);
-        $canFit         = ($vehicleSize <= $available);
-        $blocked        = ($totalCapacity <= 0) || ($totalIfAdded > $totalCapacity);
+        $canFit = ($vehicleSize <= $available);
+        $blocked = ($totalCapacity <= 0) || ($totalIfAdded > $totalCapacity);
 
         return response()->json([
             'proposed_emptying_date' => $date,
-            'application_id'         => $application->id,
-            'vehicle_size'           => $vehicleSize,
-            'total_capacity'         => $totalCapacity,
-            'booked_total'           => $totalBookedForDay,
-            'available'              => $available,
-            'remaining_after'        => $remainingAfter,
-            'can_fit'                => $canFit,
-            'blocked'                => $blocked,
+            'application_id' => $application->id,
+            'vehicle_size' => $vehicleSize,
+            'total_capacity' => $totalCapacity,
+            'booked_total' => $totalBookedForDay,
+            'available' => $available,
+            'remaining_after' => $remainingAfter,
+            'can_fit' => $canFit,
+            'blocked' => $blocked,
         ]);
     }
 
@@ -751,7 +753,7 @@ class ApplicationController extends Controller
         }
     }
 
-public function getTreatmentPlant()
+    public function getTreatmentPlant()
     {
         $date = Carbon::today();
         $dateFormatted = $date->format('F j, Y');
@@ -763,7 +765,7 @@ public function getTreatmentPlant()
             ->pluck('total', 'treatment_plant_id');
 
         // Fetch only plants of type FSTP (1) or Co-Treatment (2)
-        $treatmentPlants = TreatmentPlant::whereIn('type', [3,4])  // Use integer values instead of strings
+        $treatmentPlants = TreatmentPlant::whereIn('type', [3, 4])  // Use integer values instead of strings
             ->where('status', true)  // Only active plants
             ->select('id', 'name', 'location', 'capacity_per_day')
             ->get()
