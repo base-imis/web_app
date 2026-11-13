@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 class Kernel extends ConsoleKernel
 {
     protected $commands = [
-
+        \App\Console\Commands\ValidateSeedUserConfiguration::class,
         \App\Console\Commands\CheckPiiConfiguration::class,
         \App\Console\Commands\EncryptExistingOwnerPii::class,
         \App\Console\Commands\VerifyOwnerPiiEncryption::class,

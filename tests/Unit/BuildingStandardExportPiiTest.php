@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Controllers\BuildingInfo\BuildingController;
 use App\Models\User;
+use App\Services\ApplicationPiiAccessService;
 use App\Services\BuildingInfo\BuildingStructureService;
 use App\Services\OwnerPiiAuditService;
 use App\Services\OwnerPiiPresenter;

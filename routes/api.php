@@ -171,7 +171,7 @@ Route::group([
         Route::post('/buildings/save', [BuildingApiController::class, 'storeBuildingDataMobile']);
         Route::get('/map/building-by-point', [BuildingSurveyController::class, 'locateBuildingByPoint']);
     });
-   // Write endpoints â€” force JSON on validation/auth/throttle failures
+   // Write endpoints — force JSON on validation/auth/throttle failures
     Route::middleware([
         'auth:sanctum',
         'force.json',

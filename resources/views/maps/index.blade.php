@@ -5981,6 +5981,16 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             var buildingsToRoadPopupContent = document.getElementById('buildings-road-popup-content');
             var buildingsToRoadPopupCloser = document.getElementById('buildings-road-popup-closer');
             var buildingsToRoadPopupOverlay = createMapPopupOverlay(buildingsToRoadPopupContainer, buildingsToRoadPopupCloser);
+            function escapeHtml(text) {
+                if (text === null || text === undefined) return '';
+                return String(text)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
             // display popup on click
             map.on('click', function (evt) {
                 var feature = map.forEachFeatureAtPixel(evt.pixel,
@@ -11457,7 +11467,9 @@ $.ajax({
 
             var outputFormat = format === 'csv' ? 'CSV' : (format === 'kml' ? 'KML' : 'SHAPE-ZIP');
 
-            var exportLink = gurl_wfs + "?request=GetFeature&service=WFS&version=1.0.0&typeName=" + workspace + ":buildings_tax_status_layer&CQL_FILTER=deleted_at is null AND " + checklistparam + "&PROPERTYNAME=tax_code,bin,ward,owner_name,owner_contact,due_year,geom&outputFormat=" + outputFormat;
+            // Map exports intentionally omit encrypted owner PII. Controlled PII
+            // exports are handled by the authenticated Property Tax workflow.
+            var exportLink = gurl_wfs + "?request=GetFeature&service=WFS&version=1.0.0&typeName=" + workspace + ":buildings_tax_status_layer&CQL_FILTER=deleted_at is null AND " + checklistparam + "&PROPERTYNAME=tax_code,bin,ward,due_year,geom&outputFormat=" + outputFormat;
 
             if (format === 'csv') {
                 fetch(exportLink)
