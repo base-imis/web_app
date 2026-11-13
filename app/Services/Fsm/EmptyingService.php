@@ -320,7 +320,6 @@ class EmptyingService
             // their visibility from the current form values, allowing the
             // operator to change No. of Trips without reloading the page.
                 $hideFinalTripFields = (int) $application->trip_count !== ((int) $emptying->trip_no + 1);
-
                 $this->createFormFields[] = new FormField(
                     label: __('Receipt Number'),
                     labelFor: 'receipt_number',

@@ -19,6 +19,9 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\VerifyPropertyTaxOwnerPiiEncryption::class,
         \App\Console\Commands\MigratePiiFeature::class,
         \App\Console\Commands\MigrateUrlBindingFeature::class,
+
+        \App\Console\Commands\ValidateSeedUserConfiguration::class,
+
         \App\Console\Commands\InstallPublicIdGenerationFunction::class,
         \App\Console\Commands\GenerateMissingPublicIds::class,
         \App\Console\Commands\KpiCron::class,

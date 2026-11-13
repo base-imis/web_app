@@ -86,7 +86,7 @@ class BuildingStandardExportPiiTest extends TestCase
             $service,
             app(OwnerPiiPresenter::class),
             app(PiiAccessService::class),
-            app(ApplicationPiiAccessService::class),
+            app(\App\Services\ApplicationPiiAccessService::class),
             app(OwnerPiiAuditService::class)
         );
     }
