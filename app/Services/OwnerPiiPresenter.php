@@ -108,10 +108,11 @@ class OwnerPiiPresenter
 
     public function maskFully(?string $value): ?string
     {
-        $plaintext = $this->encryption->decrypt($value);
-
-        if ($plaintext === null || $plaintext === '') {
-            return $plaintext;
+        // A fully masked surface never needs plaintext. Avoid decrypting here
+        // so legacy or invalid values fail closed as a fixed mask instead of
+        // breaking the entire list response.
+        if ($value === null || $value === '') {
+            return $value;
         }
 
         return '********';
