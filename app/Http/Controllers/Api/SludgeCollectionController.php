@@ -18,6 +18,7 @@ use App\Models\Fsm\Application;
 use App\Models\Fsm\VacutugType;
 use App\Http\Requests\Fsm\SludgeCollectionRequest;
 use App\Models\Fsm\ServiceProvider;
+use App\Services\Fsm\OperationalDataAccessService;
 use DB;
 use DataTables;
 use Carbon\Carbon;
@@ -146,7 +147,7 @@ class SludgeCollectionController extends Controller
             ->make(true);
     }
 
-    public function getAssessedSludgeApplications()
+    public function getAssessedSludgeApplications(Request $request)
 {
     try {
         $user = Auth::user();
@@ -204,8 +205,22 @@ class SludgeCollectionController extends Controller
                   });
             });
 
-        if ($user->hasRole('Service Provider - Emptying Operator')) {
+        if ($user->hasRole('Treatment Plant - Admin')) {
+            $query->where('emptyings.treatment_plant_id', $user->treatment_plant_id);
+        }
+
+        if ($user->hasAnyRole(['Service Provider - Emptying Operator', 'Service Provider - Admin'])) {
             $query->where('applications.service_provider_id', $user->service_provider_id);
+        }
+
+        // Filter by treatment plant / disposal place selected by operator
+        $treatmentPlantId = $request->get('treatment_plant_id')
+            ?? $request->get('treatment_plant')
+            ?? $request->get('disposal_place')
+            ?? $request->get('treatmentPlantId');
+
+        if (!empty($treatmentPlantId)) {
+            $query->where('emptyings.treatment_plant_id', $treatmentPlantId);
         }
 
         $applications = $query->get()->map(function ($app) {
@@ -401,7 +416,7 @@ class SludgeCollectionController extends Controller
             'name'        => 'tipping_fee_amount',
             'input_type'  => 'number',
             'required'    => true,
-            'validation'  => 'required|numeric|min:0',
+            'validation'  => 'required|numeric|gt:0',
             'placeholder' => __('Tipping Fee Amount')
             
         ],
@@ -425,15 +440,31 @@ class SludgeCollectionController extends Controller
         }
         if (Auth::user()->hasRole('Treatment Plant - Admin')) {
             $treatmentPlants = TreatmentPlant::Operational()->where('id', Auth::user()->treatment_plant_id)->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')
+                ->where('sludge_collection_status', 0)
+                ->whereHas('emptying', function ($q) {
+                    $q->where('treatment_plant_id', Auth::user()->treatment_plant_id);
+                })
+                ->orderBy('id', 'asc')
+                ->pluck('id', 'id')
+                ->all();
+        } elseif (OperationalDataAccessService::isServiceProviderUser(Auth::user())) {
+            $treatmentPlants = TreatmentPlant::Operational()->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')
+                ->where('sludge_collection_status', 0)
+                ->where('service_provider_id', Auth::user()->service_provider_id)
+                ->orderBy('id', 'asc')
+                ->pluck('id', 'id')
+                ->all();
         } else {
             $treatmentPlants = TreatmentPlant::Operational()->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')->where('sludge_collection_status', 0)->orderBy('id', 'asc')->pluck('id', 'id')->all();
         }
         $sludgeCollection = null;
         $entry_time = null;
         $exit_time = null;
 
         $serviceProviders = ServiceProvider::orderBy('id')->pluck('company_name', 'id');
-        $applications = Application::where('emptying_status', '=', '1')->where('sludge_collection_status', 0)->orderBy('id', 'asc')->pluck('id', 'id')->all();
         $VacutugTypes = VacutugType::orderBy('id', 'asc')->pluck('capacity', 'id')->all();
         $emptyingDate = Carbon::parse($emptying->emptied_date)->format('Y-m-d');
 
