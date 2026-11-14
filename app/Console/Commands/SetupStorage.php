@@ -58,7 +58,7 @@ class SetupStorage extends Command
         foreach (array_unique($directories) as $directory) {
             try {
                 if (!$files->isDirectory($directory)) {
-                    $files->ensureDirectoryExists($directory, 0755, true);
+                    $files->ensureDirectoryExists($directory, 0777, true);
                 }
 
                 if (!$files->isDirectory($directory) || !$files->isWritable($directory)) {
