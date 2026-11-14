@@ -330,12 +330,14 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                             <tr>
                                 <th>{{ __('Name') }}</th>
                                 <th>{{ __('Location') }}</th>
-                                <th>{{ __('Capacity') }}</th>
+                                <th>{{ __('Daily Capacity (m³)') }}</th>
+                                <th>{{ __('Used Today (m³)') }}</th>
+                                <th>{{ __('Remaining Today (m³)') }}</th>
                             </tr>
                         </thead>
                         <tbody id="tp-body">
                             <tr>
-                                <td colspan="4" class="text-center">{{ __('Click button to load data...') }}</td>
+                                <td colspan="5" class="text-center">{{ __('Click button to load data...') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -642,41 +644,56 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 
         $(document).ready(function () {
 
-            $('#btnShowTP').on('click', function() {
-            $.ajax({
-                url: '{{ route("application.treatment-plant") }}',
-                method: 'GET',
-                beforeSend: function() {
-                    $('#tp-body').html('<tr><td colspan="3" class="text-center">Loading...</td></tr>');
-                },
-                success: function(response) {
-                    if(response.date_display) {
-                        $('#currentDate').html(response.date_display);
-                    } else if(response.date) {
-                        const dateObj = new Date(response.date);
-                        const options = { month: 'long', day: 'numeric' };
-                        $('#currentDate').html(dateObj.toLocaleDateString(undefined, options));
-                    }
+            function loadTreatmentPlantCapacity() {
+                $.ajax({
+                    url: '{{ route("application.treatment-plant") }}',
+                    method: 'GET',
+                    beforeSend: function() {
+                        $('#tp-body').html('<tr><td colspan="5" class="text-center">{{ __("Loading...") }}</td></tr>');
+                    },
+                    success: function(response) {
+                        if(response.date_display) {
+                            $('#currentDate').html(response.date_display);
+                        } else if(response.date) {
+                            const dateObj = new Date(response.date);
+                            const options = { month: 'long', day: 'numeric', year: 'numeric' };
+                            $('#currentDate').html(dateObj.toLocaleDateString(undefined, options));
+                        }
 
-                    var html = '';
-                    if(response.plants && response.plants.length > 0) {
-                        $.each(response.plants, function(index, plant) {
-                            html += '<tr>' +
-                                    '<td>' + (plant.name ?? "N/A") + '</td>' +
-                                    '<td>' + (plant.location ?? "N/A") + '</td>' +
-                                    '<td>' + (plant.remaining_capacity ?? "0") + '</td>' + // The subtracted value
-                                    '</tr>';
-                        });
-                    } else {
-                        html = '<tr><td colspan="3" class="text-center">No active plants found.</td></tr>';
+                        var html = '';
+                        if(response.plants && response.plants.length > 0) {
+                            $.each(response.plants, function(index, plant) {
+                                var dailyCap = plant.capacity_per_day !== null && plant.capacity_per_day !== undefined
+                                    ? Number(plant.capacity_per_day).toFixed(2)
+                                    : "0.00";
+                                var usedToday = plant.used_today !== null && plant.used_today !== undefined
+                                    ? (Math.round(Number(plant.used_today) * 100) / 100).toString()
+                                    : "0";
+                                var remainingToday = plant.remaining_capacity !== null && plant.remaining_capacity !== undefined
+                                    ? (Math.round(Number(plant.remaining_capacity) * 100) / 100).toString()
+                                    : "0";
+
+                                html += '<tr>' +
+                                        '<td>' + (plant.name ?? "N/A") + '</td>' +
+                                        '<td>' + (plant.location ?? "N/A") + '</td>' +
+                                        '<td>' + dailyCap + '</td>' +
+                                        '<td>' + usedToday + '</td>' +
+                                        '<td>' + remainingToday + '</td>' +
+                                        '</tr>';
+                            });
+                        } else {
+                            html = '<tr><td colspan="5" class="text-center">{{ __("No active plants found.") }}</td></tr>';
+                        }
+                        $('#tp-body').html(html);
+                    },
+                    error: function() {
+                        $('#tp-body').html('<tr><td colspan="5" class="text-center text-danger">{{ __("Error fetching data.") }}</td></tr>');
                     }
-                    $('#tp-body').html(html);
-                },
-                error: function() {
-                    $('#tp-body').html('<tr><td colspan="3" class="text-center text-danger">Error fetching data.</td></tr>');
-                }
-            });
-        });
+                });
+            }
+
+            $('#btnShowTP').on('click', loadTreatmentPlantCapacity);
+            $('#treatmentPlantModal').on('show.bs.modal', loadTreatmentPlantCapacity);
 
             // 2. Service Provider Dropdown AJAX
             var serviceProviderId = {{ Auth::user()->service_provider_id ?? 'null' }};

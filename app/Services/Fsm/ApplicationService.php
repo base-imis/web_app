@@ -1400,15 +1400,20 @@ class ApplicationService
                         $ownerPii = $sourceOwner
                             ? $this->ownerPiiPresenter->presentPlaintext($sourceOwner)
                             : [];
-                        $customerName = $request->filled('customer_name')
+
+                        $isNameMasked = is_string($request->input('customer_name')) && preg_match('/^\*+$/', trim($request->input('customer_name')));
+                        $isContactMasked = is_string($request->input('customer_contact')) && preg_match('/^\*+$/', trim($request->input('customer_contact')));
+                        $isGenderMasked = is_string($request->input('customer_gender')) && (preg_match('/^\*+$/', trim($request->input('customer_gender'))) || trim($request->input('customer_gender')) === '');
+
+                        $customerName = (!$isNameMasked && $request->filled('customer_name'))
                             ? $request->input('customer_name')
-                            : ($ownerPii['owner_name'] ?? null);
-                        $customerContact = $request->filled('customer_contact')
+                            : ($ownerPii['owner_name'] ?? ($sourceBuilding->house_number ?? $sourceBuilding->bin));
+                        $customerContact = (!$isContactMasked && $request->filled('customer_contact'))
                             ? $request->input('customer_contact')
                             : ($ownerPii['owner_contact'] ?? null);
-                        $customerGender = $request->filled('customer_gender')
+                        $customerGender = (!$isGenderMasked && $request->filled('customer_gender'))
                             ? $request->input('customer_gender')
-                            : ($ownerPii['owner_gender'] ?? null);
+                            : ($ownerPii['owner_gender'] ?? 'Male');
                     }
 
                     $appData['customer_name'] = $customerName;
@@ -1451,7 +1456,7 @@ class ApplicationService
                         $application->customer_contact = $customerContact;
                         $application->customer_gender = $customerGender;
 
-                        if ($owner) {
+                        if ($owner && !$isNameMasked && !$isGenderMasked && !$isContactMasked) {
                             $owner->fill([
                                 "owner_name" => $customerName,
                                 "owner_gender" => $customerGender,
@@ -1634,13 +1639,19 @@ class ApplicationService
 
             // The saved address state controls which fields may be updated.
             // Editing an application must not switch it between ANF and linked-building states.
-            $application->fill($request->except([
+            $dataToFill = $request->except([
                 'is_anf',
                 'road_code',
                 'bin',
                 'ward',
                 'containment_id',
-            ]));
+            ]);
+            foreach (['customer_name', 'customer_gender', 'customer_contact'] as $piiField) {
+                if (isset($dataToFill[$piiField]) && is_string($dataToFill[$piiField]) && preg_match('/^\*+$/', trim($dataToFill[$piiField]))) {
+                    unset($dataToFill[$piiField]);
+                }
+            }
+            $application->fill($dataToFill);
 
             // This attribute is intentionally assigned explicitly because it
             // is not mass assignable on the Application model. Without this,
