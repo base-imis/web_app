@@ -24,6 +24,7 @@ class MunicipalityInfrastructureDepartmentSeeder extends Seeder
             switch ($createdRole->name){
                 case 'Municipality - Infrastructure Department':
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['WaterSupply Network','Sewers','Sewer Connection','Drain','Roads','Utility Dashboard'])->whereNotIn('type',['History']));
+                    $createdRole->givePermissionTo(Permission::where('name', 'List Places')->get());
 
                     $createdRole->givePermissionTo(
                         Permission::all()
