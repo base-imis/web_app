@@ -39,7 +39,9 @@ return [
 
     'pdf' => [
         'enabled' => true,
-        'binary'  =>env('WKHTML_PDF_BINARY', '/usr/bin/wkhtmltopdf'),
+        'binary' => trim((string) env('WKHTML_PDF_BINARY', PHP_OS_FAMILY === 'Windows'
+            ? 'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+            : '/usr/bin/wkhtmltopdf'), " \t\n\r\0\x0B\"'"),
         'timeout' => false,
         'options' => [
             'enable-local-file-access' => true,
@@ -59,7 +61,9 @@ return [
     ],
     'image' => [
         'enabled' => true,
-        'binary' => env('WKHTML_IMG_BINARY', '/usr/bin/wkhtmltoimage'),
+        'binary' => trim((string) env('WKHTML_IMG_BINARY', PHP_OS_FAMILY === 'Windows'
+            ? 'C:/Program Files/wkhtmltopdf/bin/wkhtmltoimage.exe'
+            : '/usr/bin/wkhtmltoimage'), " \t\n\r\0\x0B\"'"),
         'timeout' => false,
         'options' => [
             'enable-local-file-access' => true,

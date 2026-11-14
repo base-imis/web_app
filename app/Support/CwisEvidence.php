@@ -2,7 +2,11 @@
 
 namespace App\Support;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use League\Flysystem\FilesystemException;
 
 class CwisEvidence
 {
@@ -11,6 +15,26 @@ class CwisEvidence
     public static function uploadRules(): array
     {
         return ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'];
+    }
+
+    public static function store(UploadedFile $file, string $directory, string $disk, string $errorKey): string
+    {
+        $reason = 'Storage driver returned false.';
+        try {
+            $path = $file->store($directory, $disk);
+            if ($path !== false) {
+                return $path;
+            }
+        } catch (FilesystemException $exception) {
+            $reason = $exception->getMessage();
+        }
+
+        Log::warning('Unable to store CWIS evidence document.', [
+            'disk' => $disk, 'directory' => $directory, 'reason' => $reason,
+        ]);
+        throw ValidationException::withMessages([
+            $errorKey => __('Evidence could not be saved to server storage. Ask the administrator to check upload directory permissions, available disk space, and persistent storage, then retry.'),
+        ]);
     }
 
     public static function response(string $disk, string $path, ?string $name, bool $preview)
