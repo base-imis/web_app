@@ -3,6 +3,8 @@
 // Developed By: Innovative Solution Pvt. Ltd. (ISPL)
 namespace App\Http\Requests\Fsm;
 
+use App\Models\BuildingInfo\Building;
+use App\Services\OwnerPiiPresenter;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApplicationRequest extends FormRequest
@@ -10,27 +12,65 @@ class ApplicationRequest extends FormRequest
     protected function prepareForValidation()
     {
         $isConfirm = $this->input('action_type') === 'confirm' || session('action_type') === 'confirm';
-        if (!$isConfirm) {
-            return;
+        if ($isConfirm) {
+            $scheduleAccept = session('schedule_accept');
+
+            if (is_array($scheduleAccept)) {
+                $lockedValues = array_filter([
+                    'road_code' => $scheduleAccept['road_code'] ?? null,
+                    'bin' => $scheduleAccept['bin'] ?? null,
+                    'containment_id' => $scheduleAccept['containment_id'] ?? null,
+                    'ward' => $scheduleAccept['ward'] ?? null,
+                    'service_provider_id' => $scheduleAccept['service_provider_id'] ?? null,
+                ], function ($value) {
+                    return $value !== null && $value !== '';
+                });
+
+                $this->merge($lockedValues);
+            }
         }
 
-        $scheduleAccept = session('schedule_accept');
+        $isAnf = $this->input('is_anf') == '1';
+        $bin = $this->input('bin');
 
-        if (!is_array($scheduleAccept)) {
-            return;
+        if (!$isAnf && !empty($bin)) {
+            $building = Building::where('bin', $bin)->first();
+            $sourceOwner = $building ? $building->owners : null;
+            $ownerPii = $sourceOwner ? app(OwnerPiiPresenter::class)->presentPlaintext($sourceOwner) : [];
+
+            $isNameMasked = is_string($this->customer_name) && preg_match('/^\*+$/', trim($this->customer_name));
+            $isGenderMasked = is_string($this->customer_gender) && (preg_match('/^\*+$/', trim($this->customer_gender)) || trim($this->customer_gender) === '');
+            $isContactMasked = is_string($this->customer_contact) && preg_match('/^\*+$/', trim($this->customer_contact));
+
+            $mergedOwner = [];
+
+            if ($isNameMasked || empty($this->customer_name)) {
+                $mergedOwner['customer_name'] = !empty($ownerPii['owner_name'])
+                    ? $ownerPii['owner_name']
+                    : ($building ? ($building->house_number ?? $building->bin) : 'Owner');
+            }
+
+            if ($isGenderMasked || empty($this->customer_gender)) {
+                $mergedOwner['customer_gender'] = !empty($ownerPii['owner_gender'])
+                    ? $ownerPii['owner_gender']
+                    : 'Male';
+            }
+
+            if ($isContactMasked || empty($this->customer_contact)) {
+                $contact = !empty($ownerPii['owner_contact'])
+                    ? preg_replace('/[^0-9]/', '', (string) $ownerPii['owner_contact'])
+                    : null;
+                if ($contact && strlen($contact) === 10) {
+                    $mergedOwner['customer_contact'] = $contact;
+                } else {
+                    $mergedOwner['customer_contact'] = null;
+                }
+            }
+
+            if (!empty($mergedOwner)) {
+                $this->merge($mergedOwner);
+            }
         }
-
-        $lockedValues = array_filter([
-            'road_code' => $scheduleAccept['road_code'] ?? null,
-            'bin' => $scheduleAccept['bin'] ?? null,
-            'containment_id' => $scheduleAccept['containment_id'] ?? null,
-            'ward' => $scheduleAccept['ward'] ?? null,
-            'service_provider_id' => $scheduleAccept['service_provider_id'] ?? null,
-        ], function ($value) {
-            return $value !== null && $value !== '';
-        });
-
-        $this->merge($lockedValues);
     }
 
     /**
@@ -52,6 +92,7 @@ class ApplicationRequest extends FormRequest
     {
         $isAnf = request()->input('is_anf') == '1';
         $isConfirm = request()->input('action_type') === 'confirm' || session('action_type') === 'confirm';
+        $isCustomerContactMasked = is_string($this->customer_contact) && preg_match('/^\*+$/', trim($this->customer_contact));
 
         return [
             'road_code'                   => !$isAnf && !$isConfirm && request()->isMethod('post') ? 'required' : 'nullable',
@@ -69,7 +110,9 @@ class ApplicationRequest extends FormRequest
             // Owner fields
             'customer_name'               => !$isAnf ? 'required' : 'nullable',
             'customer_gender'             => !$isAnf ? 'required' : 'nullable',
-            'customer_contact'            => !$isAnf ? 'nullable|integer|digits:10' : 'nullable',
+            'customer_contact'            => !$isAnf
+                ? ($isCustomerContactMasked ? 'nullable' : 'nullable|integer|digits:10')
+                : 'nullable',
 
             // Applicant fields
             'applicant_name'              => 'required',

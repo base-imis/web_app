@@ -80,7 +80,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
     <div class="form-group row required">
         {!! Form::label('tipping_fee_amount', __('Tipping Fee Amount'),['class' => 'col-sm-3 control-label']) !!}
         <div class="col-sm-3">
-            {!! Form::text('tipping_fee_amount', $sludgeCollection->tipping_fee_amount??null,['class' => 'col-sm form-control', 'placeholder' => 'Tipping Fee Amount', 'oninput' => "this.value = this.value.replace(/[^0-9.]/g, '');"]) !!}
+            {!! Form::text('tipping_fee_amount', $sludgeCollection->tipping_fee_amount??null,['class' => 'col-sm form-control', 'placeholder' => 'Tipping Fee Amount', 'min' => '1', 'oninput' => "this.value = this.value.replace(/[^0-9]/g, '');"]) !!}
         </div>
     </div>
   @if(!empty($service_provider_id))
