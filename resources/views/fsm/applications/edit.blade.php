@@ -93,26 +93,22 @@ An Edit Layout for all forms
                         {
                             url: "{{ route('application.get-building-details') }}",
                             data: {
-                                "house_number" : $('#bin').val()
+                                "bin" : $('#bin').val()
                             },
                             success: function (res) {
                                 if (res.status === true){
                                     let containments = '';
-                                    res.containments.forEach(function (containment) {
-                                        containments+=containment.id + ' ';
-                                    })
-                                    $('#customer_name').val(res.customer_name);
-                                    if(res.customer_gender == "Male"){
-                                        var cgender = "M";
-                                    } else if(res.customer_gender == "Female") {
-                                        var cgender = "F";
-                                    } else if(res.customer_gender == "Others") {
-                                        var cgender = "O";
+                                    if (Array.isArray(res.containments)) {
+                                        res.containments.forEach(function (containment) {
+                                            containments += (typeof containment === 'object' ? containment.id : containment) + ' ';
+                                        });
                                     }
-                                   
-                                    $('#customer_gender').val(cgender);
-                                    $('#customer_contact').val(res.customer_contact);
-                                    $('#containment_code').val(containments);
+                                    if (!res.owner_pii_locked) {
+                                        $('#customer_name').val(res.customer_name);
+                                        $('#customer_gender').val(res.customer_gender);
+                                        $('#customer_contact').val(res.customer_contact);
+                                    }
+                                    $('#containment_code').val(containments.trim());
                                     $('#ward').val(res.ward);
                                     $("input[type='submit']").removeAttr('disabled');
                                 } else if (res.status === false) {

@@ -195,6 +195,15 @@ class PermissionsSeeder extends Seeder
                 ]
             ],
             [
+                "group" => "Places",
+                "perms" => [
+                    [
+                        "type" => "List",
+                        "name" => "List Places"
+                    ],
+                ]
+            ],
+            [
                 "group" => "Drain",
                 "perms" => [
                     [
@@ -687,6 +696,10 @@ class PermissionsSeeder extends Seeder
                     [
                         "type" => "Edit",
                         "name" => "Edit Application"
+                    ],
+                    [
+                        "type" => "Edit",
+                        "name" => "Proposed Emptying Date"
                     ],
                     [
                         "type" => "Delete",
