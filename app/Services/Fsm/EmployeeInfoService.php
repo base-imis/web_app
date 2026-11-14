@@ -108,6 +108,10 @@ class EmployeeInfoService {
      */
     public function storeOrUpdate($id = null,$data)
     {
+        $isDriver = ($data['employee_type'] ?? null) === 'Driver';
+        $licenseNumber = $isDriver && !empty($data['license_number']) ? $data['license_number'] : null;
+        $licenseIssueDate = $isDriver && !empty($data['license_issue_date']) ? $data['license_issue_date'] : null;
+
         if(is_null($id)){
             $employeeInfos = new EmployeeInfo();
             $employeeInfos->service_provider_id = $data['service_provider_id'] ? str_replace(['[',']'], '', $data['service_provider_id']) : null;
@@ -119,8 +123,8 @@ class EmployeeInfoService {
             $employeeInfos->employee_type = $data['employee_type'] ? $data['employee_type'] : null;
             $employeeInfos->year_of_experience = $data['year_of_experience'] ? $data['year_of_experience'] : null;
             $employeeInfos->wage = $data['wage'] ? $data['wage'] : null;
-            $employeeInfos->license_number = $data['license_number'] ? $data['license_number'] : null;
-            $employeeInfos->license_issue_date = $data['license_issue_date'] ? $data['license_issue_date'] : null;
+            $employeeInfos->license_number = $licenseNumber;
+            $employeeInfos->license_issue_date = $licenseIssueDate;
             $employeeInfos->training_status = $data['training_status'] ? $data['training_status'] : null;
             $employeeInfos->employment_start = $data['employment_start'] ? $data['employment_start'] : null;
             $employeeInfos->status = $data['status'] ? $data['status'] : 0;
@@ -139,8 +143,8 @@ class EmployeeInfoService {
             $employeeInfos->employee_type = $data['employee_type'] ? $data['employee_type'] : null;
             $employeeInfos->year_of_experience = $data['year_of_experience'] ? $data['year_of_experience'] : null;
             $employeeInfos->wage = $data['wage'] ? $data['wage'] : null;
-            $employeeInfos->license_number = $data['license_number'] ? $data['license_number'] : null;
-            $employeeInfos->license_issue_date = $data['license_issue_date'] ? $data['license_issue_date'] : null;
+            $employeeInfos->license_number = $licenseNumber;
+            $employeeInfos->license_issue_date = $licenseIssueDate;
             $employeeInfos->training_status = $data['training_status'] ? $data['training_status'] : null;
             $employeeInfos->employment_start = $data['employment_start'] ? $data['employment_start'] : null;
             $employeeInfos->status = $data['status'] ? $data['status'] : 0;

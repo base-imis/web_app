@@ -103,9 +103,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
  
         // Restore Owner Details card
         $('#owner-details-card').slideDown(200);
-        $('#owner-details-card input, #owner-details-card select')
-            .not('[data-view-only]')
-            .prop('disabled', false);
+        if (!ownerPiiLookupUnlocked) {
+            showLockedOwnerFields();
+        } else {
+            $('#owner-details-card input, #owner-details-card select')
+                .not('[data-view-only]')
+                .prop('disabled', false);
+        }
 
         // Disable & unrequire ANF fields (do not clear values)
         $('#anf_ward, #anf_locality, #anf_nearest_locality').prop('disabled', true).prop('required', false);
@@ -180,6 +184,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
     const scheduleRoadText = @json($scheduleRoadText ?? null);
     const scheduleBinText = @json($scheduleBinText ?? null);
     const ownerPiiMask = '********';
+    const ownerPiiLookupUnlocked = @json((bool) ($ownerPiiLookupUnlocked ?? false));
     let ownerPiiRevealed = false;
 
     function updateSameAsOwnerVisibility() {
@@ -250,8 +255,18 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             'input[type="hidden"][name="customer_gender"], ' +
             'input[type="hidden"][name="customer_contact"]').remove();
 
-        $('#customer_name').val(ownerPiiMask).prop('disabled', true);
-        $('#customer_contact').val(ownerPiiMask).prop('disabled', true);
+        $('#customer_name')
+            .val(ownerPiiMask)
+            .prop('disabled', true)
+            .attr('readonly', true)
+            .attr('data-view-only', 'locked');
+
+        $('#customer_contact')
+            .val(ownerPiiMask)
+            .prop('disabled', true)
+            .attr('readonly', true)
+            .attr('data-view-only', 'locked');
+
         $('#customer_gender option[data-pii-mask="true"]').remove();
         $('#customer_gender')
             .append($('<option>', {
@@ -260,7 +275,27 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
                 selected: true,
                 'data-pii-mask': 'true'
             }))
-            .prop('disabled', true);
+            .val(ownerPiiMask)
+            .prop('disabled', true)
+            .attr('data-view-only', 'locked');
+
+        $('<input>', {
+            type: 'hidden',
+            name: 'customer_name',
+            value: ownerPiiMask
+        }).insertAfter('#customer_name');
+
+        $('<input>', {
+            type: 'hidden',
+            name: 'customer_gender',
+            value: ownerPiiMask
+        }).insertAfter('#customer_gender');
+
+        $('<input>', {
+            type: 'hidden',
+            name: 'customer_contact',
+            value: ownerPiiMask
+        }).insertAfter('#customer_contact');
 
         updateSameAsOwnerVisibility();
     }
@@ -375,7 +410,11 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
         $('[data-view-only="lookup"]')
             .removeAttr('data-view-only')
             .prop('disabled', false);
-        $('#customer_name, #customer_gender, #customer_contact').prop('disabled', false);
+        if (!ownerPiiLookupUnlocked) {
+            showLockedOwnerFields();
+        } else {
+            $('#customer_name, #customer_gender, #customer_contact').prop('disabled', false);
+        }
         $("input[name='applicant_name']").val('').removeAttr('disabled');
         $("#applicant_gender").val('').removeAttr('disabled');
         $("input[name='applicant_contact']").val('').removeAttr('disabled');
@@ -543,6 +582,10 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
     }
 
     $(document).ready(function() {
+        if (!ownerPiiLookupUnlocked) {
+            showLockedOwnerFields();
+        }
+
         $('#applicant_name, #applicant_gender, #applicant_contact').on('input change', function() {
             localStorage.setItem("applicant_name", $('#applicant_name').val());
             localStorage.setItem("applicant_gender", $('#applicant_gender').val());
@@ -550,10 +593,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
         });
 
         $('#customer_name, #customer_gender, #customer_contact').on('input change', function() {
+            if (!ownerPiiLookupUnlocked) {
+                return;
+            }
             const fieldName = $(this).attr('name');
             const fieldValue = $(this).val();
 
-            if (fieldValue && fieldValue.trim() !== '') {
+            if (fieldValue && fieldValue.trim() !== '' && fieldValue !== ownerPiiMask) {
                 $(`input[name="${fieldName}"][type="hidden"]`).remove();
             
                 $('<input>').attr({
@@ -566,13 +612,13 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             const ownerGender = $('#customer_gender').val();
             const ownerContact = $('#customer_contact').val();
 
-            if (ownerName) localStorage.setItem("selectedOwnerName", ownerName);
+            if (ownerName && ownerName !== ownerPiiMask) localStorage.setItem("selectedOwnerName", ownerName);
             else localStorage.removeItem("selectedOwnerName");
 
-            if (ownerGender) localStorage.setItem("selectedOwnerGender", ownerGender);
+            if (ownerGender && ownerGender !== ownerPiiMask) localStorage.setItem("selectedOwnerGender", ownerGender);
             else localStorage.removeItem("selectedOwnerGender");
 
-            if (ownerContact) localStorage.setItem("selectedOwnerContact", ownerContact);
+            if (ownerContact && ownerContact !== ownerPiiMask) localStorage.setItem("selectedOwnerContact", ownerContact);
             else localStorage.removeItem("selectedOwnerContact");
         });
         const formSubmitted = localStorage.getItem("formSubmitted");
@@ -680,7 +726,21 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 
             // Enable normal address fields & owner details inputs so intended fields are sent
             $('#road_code, #bin, #ward, #containment_id').prop('disabled', false);
-            $('#owner-details-card input, #owner-details-card select').prop('disabled', false);
+            $('#owner-details-card input, #owner-details-card select')
+                .not('[data-view-only]')
+                .prop('disabled', false);
+
+            if (!ownerPiiLookupUnlocked || !ownerPiiRevealed) {
+                if (!$('input[type="hidden"][name="customer_name"]').length) {
+                    $('<input>').attr({type: 'hidden', name: 'customer_name', value: ownerPiiMask}).appendTo('#create_application_form');
+                }
+                if (!$('input[type="hidden"][name="customer_gender"]').length) {
+                    $('<input>').attr({type: 'hidden', name: 'customer_gender', value: ownerPiiMask}).appendTo('#create_application_form');
+                }
+                if (!$('input[type="hidden"][name="customer_contact"]').length) {
+                    $('<input>').attr({type: 'hidden', name: 'customer_contact', value: ownerPiiMask}).appendTo('#create_application_form');
+                }
+            }
         }
     });
 
@@ -739,6 +799,9 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
             if (selectedBINValue) $('#bin').val(selectedBINValue);
             // Customer PII is deliberately not restored from localStorage.
             // The user must repeat the authorized BIN lookup when needed.
+            if (!ownerPiiLookupUnlocked) {
+                showLockedOwnerFields();
+            }
             if (selectedHouseholdServed) {
                 $('#household_served').val(selectedHouseholdServed).prop('disabled', true)
                     .attr('data-view-only', 'lookup');
@@ -867,35 +930,50 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL)   -->
 
         checkDetailsAndUpdateCheckbox();
         // Function to check if the Owner and Applicant details are the same
-    function checkDetailsAndUpdateCheckbox() {
-        // Get the values of the Owner and Applicant Details
-        const ownerDetails = {
-            name: document.getElementById('customer_name').value,
-            gender: document.getElementById('customer_gender').value,
-            contact: document.getElementById('customer_contact').value
-        };
+        function checkDetailsAndUpdateCheckbox() {
+            const sameAsOwnerCheckbox = document.getElementById('autofill');
+            if (!sameAsOwnerCheckbox) return;
 
-        const applicantDetails = {
-            name: document.getElementById('applicant_name').value,
-            gender: document.getElementById('applicant_gender').value,
-            contact: document.getElementById('applicant_contact').value
-        };
+            const customerNameEl = document.getElementById('customer_name');
+            const customerGenderEl = document.getElementById('customer_gender');
+            const customerContactEl = document.getElementById('customer_contact');
+            const applicantNameEl = document.getElementById('applicant_name');
+            const applicantGenderEl = document.getElementById('applicant_gender');
+            const applicantContactEl = document.getElementById('applicant_contact');
 
-        // Get the checkbox element
-        const sameAsOwnerCheckbox = document.getElementById('autofill');
-        const areOwnerDetailsValid = ownerDetails.name !== "" && ownerDetails.gender !== "" && ownerDetails.contact !== "";
-        const areApplicantDetailsValid = applicantDetails.name !== "" && applicantDetails.gender !== "" && applicantDetails.contact !== "";
+            if (!customerNameEl || !customerGenderEl || !customerContactEl ||
+                !applicantNameEl || !applicantGenderEl || !applicantContactEl) {
+                sameAsOwnerCheckbox.checked = false;
+                return;
+            }
 
+            const ownerDetails = {
+                name: customerNameEl.value,
+                gender: customerGenderEl.value,
+                contact: customerContactEl.value
+            };
 
-        // Compare Owner and Applicant details
-        const isSame = areOwnerDetailsValid && areApplicantDetailsValid &&
-                   ownerDetails.name === applicantDetails.name &&
-                   ownerDetails.gender === applicantDetails.gender &&
-                   ownerDetails.contact === applicantDetails.contact;
+            const applicantDetails = {
+                name: applicantNameEl.value,
+                gender: applicantGenderEl.value,
+                contact: applicantContactEl.value
+            };
 
-        // Update checkbox state based on comparison
-        sameAsOwnerCheckbox.checked = isSame;
-    }
+            if (!ownerPiiRevealed || ownerDetails.name === ownerPiiMask || ownerDetails.contact === ownerPiiMask) {
+                sameAsOwnerCheckbox.checked = false;
+                return;
+            }
+
+            const areOwnerDetailsValid = ownerDetails.name !== "" && ownerDetails.gender !== "" && ownerDetails.contact !== "";
+            const areApplicantDetailsValid = applicantDetails.name !== "" && applicantDetails.gender !== "" && applicantDetails.contact !== "";
+
+            const isSame = areOwnerDetailsValid && areApplicantDetailsValid &&
+                       ownerDetails.name === applicantDetails.name &&
+                       ownerDetails.gender === applicantDetails.gender &&
+                       ownerDetails.contact === applicantDetails.contact;
+
+            sameAsOwnerCheckbox.checked = isSame;
+        }
         // Attach event listeners to Applicant fields to check when any field changes
         document.getElementById('applicant_name').addEventListener('input', checkDetailsAndUpdateCheckbox);
         document.getElementById('applicant_gender').addEventListener('input', checkDetailsAndUpdateCheckbox);

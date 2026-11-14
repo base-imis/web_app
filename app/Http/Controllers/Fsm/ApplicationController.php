@@ -372,7 +372,14 @@ class ApplicationController extends Controller
             'customer_gender',
             'customer_contact',
         ])->contains(function ($field) use ($request) {
-            return $request->filled($field);
+            $value = $request->input($field);
+            if (!is_string($value) || trim($value) === '') {
+                return false;
+            }
+            if (preg_match('/^\*+$/', trim($value))) {
+                return false;
+            }
+            return true;
         });
 
         // Browser-disabled fields are not a security boundary. A crafted
@@ -770,10 +777,11 @@ class ApplicationController extends Controller
             ->get()
             ->map(function ($plant) use ($sludgeTotals) {
                 // Get the total sludge for today for the current plant (default to 0 if no data)
-                $totalUsed = $sludgeTotals[$plant->id] ?? 0;
+                $totalUsed = (float) ($sludgeTotals[$plant->id] ?? 0);
 
+                $plant->used_today = $totalUsed;
                 // Calculate the remaining capacity for today
-                $plant->remaining_capacity = $plant->capacity_per_day - $totalUsed;
+                $plant->remaining_capacity = (float) $plant->capacity_per_day - $totalUsed;
 
                 return $plant;
             });
