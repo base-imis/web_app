@@ -512,10 +512,9 @@ class CwisGeneratorDataController extends Controller
                 }
                 if ($value === 'Yes' && isset($files[$field->input_name]) && $field->document_column) {
                     $file = $files[$field->input_name];
-                    $path = $file->store('cwis/equity-documents', 'public');
-                    if ($path === false) {
-                        throw new \RuntimeException('Unable to store CWIS evidence document.');
-                    }
+                    $path = \App\Support\CwisEvidence::store(
+                        $file, 'cwis/equity-documents', 'public', 'evidence.' . $field->input_name
+                    );
                     $storedPaths[] = $path;
                     $rows[$table][$field->document_column] = DB::table('cwis.equity_documents')->insertGetId([
                         'disk' => 'public', 'path' => $path, 'original_name' => $file->getClientOriginalName(),
