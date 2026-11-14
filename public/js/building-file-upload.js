@@ -197,7 +197,7 @@
             }
 
             showImagePreview(uploadFile);
-            setHintStatus(hint, 'default');
+            setHintStatus(hint, 'success');
             setFeedback(feedback, '', true);
         } catch (error) {
             clearInput(input);

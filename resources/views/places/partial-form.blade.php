@@ -115,14 +115,14 @@
         </div>
     </div>
 
-    <div class="form-group row">
-        {!! Form::label('ward', __('Ward').' <span class="text-danger">*</span>', ['class' => 'col-sm-3 control-label'], false) !!}
+    <div class="form-group required row">
+        {!! Form::label('ward', __('Ward'), ['class' => 'col-sm-3 control-label']) !!}
         <div class="col-sm-3">
             @php
                 $wards = range(1, 8);
                 $wards = array_combine($wards, $wards);
             @endphp
-            {!! Form::select('ward', $wards, null, ['class' => 'form-control', 'placeholder' => 'Ward', 'required']) !!}
+            {!! Form::select('ward', $wards, null, ['class' => 'form-control', 'placeholder' => 'Ward']) !!}
         </div>
     </div>
 
@@ -529,13 +529,25 @@
             var wardNumber = $('#ward').val();
 
             if (!wardNumber) {
-                alert('Please select a Ward first, then click on the map to set the location.');
+                Swal.fire({
+                    icon: 'warning',
+                    title: @json(__('Ward Required')),
+                    text: @json(__('Please select a Ward first, then click on the map to set the location.')),
+                    confirmButtonText: @json(__('OK'))
+                });
                 return;
             }
 
-            // is skipped rather than blocking every click.)
+            // If the ward geometry could not be loaded, boundary validation is
+            // skipped rather than blocking every map click.
             if (selectedWardGeometry && !selectedWardGeometry.intersectsCoordinate(evt.coordinate)) {
-                alert('That point is outside Ward ' + wardNumber + '. Please click within the highlighted ward boundary.');
+                Swal.fire({
+                    icon: 'warning',
+                    title: @json(__('Outside Selected Ward')),
+                    text: @json(__('That point is outside Ward')) + ' ' + wardNumber
+                        + '. ' + @json(__('Please click within the highlighted ward boundary.')),
+                    confirmButtonText: @json(__('OK'))
+                });
                 return;
             }
 
