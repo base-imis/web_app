@@ -160,10 +160,10 @@ $(document).ready(function() {
             $('#license_issue_date').show();
         } else {
             $('#license_number').hide();
-            $('.license_number').val('');
+            $('input[name="license_number"]').val('');
 
             $('#license_issue_date').hide();
-            $('.license_issue_date').val('');
+            $('input[name="license_issue_date"]').val('');
         }
     }).trigger('change');
 
