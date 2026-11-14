@@ -320,7 +320,6 @@ class ApplicationController extends Controller
 
         return view('layouts.show', compact('page_title', 'formFields', 'application', 'indexAction'))
             ->with('cardForm', true);
-        }
     }
 
     /**
