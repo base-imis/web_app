@@ -30,6 +30,31 @@
             document.getElementById('houseImageFeedback');
     }
 
+    function hintFor(input) {
+        return document.getElementById(
+            input.id === 'receipt_image' ? 'fileSizeRintImg' : 'fileSizeHintImg'
+        );
+    }
+
+    function setHintStatus(input, status) {
+        var hint = hintFor(input);
+        if (!hint) return;
+
+        if (status === 'success') {
+            hint.classList.remove('text-muted', 'text-danger');
+            hint.classList.add('text-success');
+            hint.style.color = '#28a745';
+        } else if (status === 'error') {
+            hint.classList.remove('text-muted', 'text-success');
+            hint.classList.add('text-danger');
+            hint.style.color = '#dc3545';
+        } else {
+            hint.classList.remove('text-success', 'text-danger');
+            hint.classList.add('text-muted');
+            hint.style.color = '';
+        }
+    }
+
     function previewFor(input) {
         return document.getElementById(
             input.id === 'receipt_image' ? 'receiptImagePreview' : 'houseImagePreview'
@@ -110,6 +135,8 @@
         var file = input.files && input.files[0];
         if (!file) {
             resetPreview(input);
+            setHintStatus(input, 'default');
+            showFeedback(input, '', false);
             return;
         }
 
@@ -118,6 +145,7 @@
         if (!extensionIsValid || !mimeIsValid) {
             input.value = '';
             resetPreview(input);
+            setHintStatus(input, 'error');
             showFeedback(input, 'Only JPG or JPEG images are allowed.', true);
             return;
         }
@@ -159,10 +187,12 @@
             if (label && label.classList.contains('custom-file-label')) {
                 label.textContent = file.name;
             }
+            setHintStatus(input, 'success');
             showFeedback(input, '', false);
         } catch (error) {
             input.value = '';
             resetPreview(input);
+            setHintStatus(input, 'error');
             showFeedback(input, error.message, true);
         } finally {
             setFormBusy(input, false);
