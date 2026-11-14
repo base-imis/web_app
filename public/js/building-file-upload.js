@@ -197,14 +197,8 @@
             }
 
             showImagePreview(uploadFile);
-            setHintStatus(hint, 'success');
-            setFeedback(
-                feedback,
-                uploadFile !== file
-                    ? 'Image optimized from ' + formatBytes(originalSize) + ' to ' + formatBytes(uploadFile.size) + '.'
-                    : 'Image ready for upload (' + formatBytes(uploadFile.size) + ').',
-                true
-            );
+            setHintStatus(hint, 'default');
+            setFeedback(feedback, '', true);
         } catch (error) {
             clearInput(input);
             setHintStatus(hint, 'error');
