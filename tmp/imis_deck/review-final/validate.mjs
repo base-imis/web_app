@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import crypto from 'node:crypto';
+const B='C:/xampp/htdocs/lang_web_app/tmp/imis_deck/review-final';
+const SK='C:/Users/user/.codex/plugins/cache/openai-primary-runtime/presentations/26.1112.11011/skills/presentations';
+const {finalizePresentation}=await import(pathToFileURL(SK+'/container_tools/artifact_tool_utils.mjs').href);
+const referencePath='C:/Users/user/.codex/visualizations/2026/11/10/01a1c41d-eda3-75e0-8fbc-fc9ee0094637/IMIS_Mobile_Updated_Original_Template.pptx';
+const referenceSha256=crypto.createHash('sha256').update(await fs.readFile(referencePath)).digest('hex');
+await fs.mkdir(B+'/output',{recursive:true});
+const finalPath=B+'/output/IMIS_Mobile_App_Final_Reviewer_Updates.pptx';
+const owners=[2,7,9,12,17,19,20,21,26,35];
+const result=await finalizePresentation({workspaceDir:B,candidatePath:B+'/reviewed-candidate.pptx',finalPath,explicitTotalSlideCount:45,requiredNativeTableOwnerSlides:owners,requiredNativeChartOwnerSlides:[],pythonExecutable:'C:/Program Files/WindowsApps/OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt/dependencies/python/python.exe',integrityValidatorPath:SK+'/container_tools/inspect_presentation_package_integrity.py',layoutValidatorPath:SK+'/container_tools/inspect_presentation_layout_geometry.py',layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-bullet-geometry','--validate-heading-fit',...owners.flatMap(n=>['--require-native-table-slide',String(n)])],fontPolicy:{basis:'reference',families:['Times New Roman','Courier New'],referencePath,referenceSha256},verifyArtifactToolImport:true,receiptPath:B+'/final-validation.json'});
+const dest='C:/Users/user/.codex/visualizations/2026/11/10/01a1c41d-eda3-75e0-8fbc-fc9ee0094637/IMIS_Mobile_App_Final_Reviewer_Updates.pptx';await fs.copyFile(finalPath,dest);console.log(JSON.stringify({dest,sha256:result.finalSha256,bytes:result.byteCount,slides:45}));process.exit(0);
