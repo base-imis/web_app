@@ -29,6 +29,7 @@ class ServiceProviderHelpDeskSeeder extends Seeder
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Containments'])
                      ->whereIn('type',['View','List','View on map']));
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Applications'])->whereNotIn('type','History'));
+                    $createdRole->givePermissionTo(Permission::where('name', 'Proposed Emptying Date')->get());
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Feedbacks']));
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Emptyings','Sludge Collections'])->whereIn('type', ['View','List','Export']));
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group',['Maps'])
