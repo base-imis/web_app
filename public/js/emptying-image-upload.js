@@ -159,13 +159,7 @@
             if (label && label.classList.contains('custom-file-label')) {
                 label.textContent = file.name;
             }
-            showFeedback(
-                input,
-                shouldOptimize
-                    ? 'Image optimized from ' + formatBytes(file.size) + ' to ' + formatBytes(uploadFile.size) + '.'
-                    : 'Image ready for upload (' + formatBytes(uploadFile.size) + ').',
-                false
-            );
+            showFeedback(input, '', false);
         } catch (error) {
             input.value = '';
             resetPreview(input);

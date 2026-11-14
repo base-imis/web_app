@@ -33,6 +33,7 @@ class MunicipalityHelpDeskSeeder extends Seeder
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group', ['Containments'])->whereIn('type', ['View', 'List', 'Export', 'View on map', 'Service History']));
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group', ['Treatment Plants'])->whereIn('type', ['View', 'List', 'View on map']));
                     $createdRole->givePermissionTo(Permission::all()->whereIn('group', ['Applications', 'Feedbacks'])->whereNotIn('type', ['History']));
+                    $createdRole->givePermissionTo(Permission::where('name', 'Proposed Emptying Date')->get());
                     $createdRole->givePermissionTo(
                         Permission::all()->whereIn('group', ['FSM Dashboard'])
                         ->whereIn('name', [

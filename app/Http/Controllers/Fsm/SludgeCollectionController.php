@@ -164,15 +164,31 @@ class SludgeCollectionController extends Controller
         }
         if (Auth::user()->hasRole('Treatment Plant - Admin')) {
             $treatmentPlants = TreatmentPlant::Operational()->where('id', Auth::user()->treatment_plant_id)->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')
+                ->where('sludge_collection_status', 0)
+                ->whereHas('emptying', function ($q) {
+                    $q->where('treatment_plant_id', Auth::user()->treatment_plant_id);
+                })
+                ->orderBy('id', 'asc')
+                ->pluck('id', 'id')
+                ->all();
+        } elseif (OperationalDataAccessService::isServiceProviderUser(Auth::user())) {
+            $treatmentPlants = TreatmentPlant::Operational()->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')
+                ->where('sludge_collection_status', 0)
+                ->where('service_provider_id', Auth::user()->service_provider_id)
+                ->orderBy('id', 'asc')
+                ->pluck('id', 'id')
+                ->all();
         } else {
             $treatmentPlants = TreatmentPlant::Operational()->orderBy('id')->pluck('name', 'id');
+            $applications = Application::where('emptying_status', '=', '1')->where('sludge_collection_status', 0)->orderBy('id', 'asc')->pluck('id', 'id')->all();
         }
         $sludgeCollection = null;
         $entry_time = null;
         $exit_time = null;
 
         $serviceProviders = ServiceProvider::orderBy('id')->pluck('company_name', 'id');
-        $applications = Application::where('emptying_status', '=', '1')->where('sludge_collection_status', 0)->orderBy('id', 'asc')->pluck('id', 'id')->all();
         $VacutugTypes = VacutugType::orderBy('id', 'asc')->pluck('capacity', 'id')->all();
         $emptyingDate = Carbon::parse($emptying->emptied_date)->format('Y-m-d');
 
