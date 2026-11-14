@@ -188,10 +188,8 @@ class CwisRevisedSafetyTest extends TestCase
             ->assertSee('name="bod_compliance_threshold_mg_l"', false)
             ->assertDontSee('name="fs_generation_from_containment_not_connected_to_sewer_lpcd"', false)
             ->assertDontSee('name="greywater_conversion_factor_connected_to_sewer"', false)
-            ->assertSee('id="legacy-fs_generation_from_containment_not_connected_to_sewer_lpcd"', false)
-            ->assertSee('id="legacy-fs_generation_from_permeable_or_unlined_pit_lpcd"', false)
-            ->assertSee('id="legacy-greywater_conversion_factor_connected_to_sewer"', false)
-            ->assertSee('readonly data-legacy-setting', false);
+            ->assertDontSee('Legacy Parameters (Not Used by Revised Formulas)')
+            ->assertDontSee('data-legacy-setting', false);
         $payload = array_map(function ($parameter) { return $parameter['default']; }, config('cwis_safety_settings'));
         $payload['active_country'] = 'NP';
         $payload['bod_compliance_threshold_mg_l'] = 45;
