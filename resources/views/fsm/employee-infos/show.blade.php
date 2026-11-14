@@ -69,6 +69,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL) --}}
                 </div>
             </div>
 
+            @if ($employeeInfos->employee_type === 'Driver')
             <div id="license_number" class="form-group row">
                 {!! Form::label('license_number', __('Driving License Number'), ['class' => 'col-sm-3 control-label']) !!}
                 <div class="col-sm-3">
@@ -81,6 +82,7 @@ Developed By: Innovative Solution Pvt. Ltd. (ISPL) --}}
                     {!! Form::label(null, $employeeInfos->license_issue_date, ['class' => 'form-control']) !!}
                 </div>
             </div>
+            @endif
             <div class="form-group row">
                 {!! Form::label('training_received', __('Training Received (if any)'), ['class' => 'col-sm-3 control-label']) !!}
                 <div class="col-sm-3">
